@@ -8,12 +8,15 @@ import React, {
   useState,
 } from "react";
 
-import { BADGES } from "@/constants/gamification";
 import {
   CO2_PER_BOTTLE,
   CO2_PER_CAN,
   POINTS_PER_BOTTLE,
   POINTS_PER_CAN,
+  getLevelInfo,
+  getMultiplier,
+  getTodaysChallenge,
+  computeChallengeProgress,
 } from "@/constants/gamification";
 
 export interface RecyclingSession {
@@ -41,6 +44,19 @@ export interface User {
   sessions: RecyclingSession[];
 }
 
+export interface SessionResult {
+  pointsEarned: number;
+  basePoints: number;
+  multiplier: number;
+  carbonReduced: number;
+  newBadges: string[];
+  leveledUp: boolean;
+  newLevel: number;
+  newTitle: string;
+  challengeCompleted: boolean;
+  challengeBonus: number;
+}
+
 interface AuthContextType {
   user: User | null;
   allUsers: User[];
@@ -61,7 +77,7 @@ interface AuthContextType {
   addRecyclingSession: (
     itemType: "can" | "bottle",
     quantity: number
-  ) => Promise<{ pointsEarned: number; carbonReduced: number }>;
+  ) => Promise<SessionResult>;
   refreshLeaderboard: () => Promise<void>;
 }
 
@@ -238,26 +254,41 @@ function computeStreak(
   user: User
 ): { streak: number; lastSessionDate: string } {
   const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  if (user.lastSessionDate === today) {
+  const yesterday = new Date(Date.now() - 86400000)
+    .toISOString()
+    .split("T")[0];
+  if (user.lastSessionDate === today)
     return { streak: user.streak, lastSessionDate: today };
-  }
-  if (user.lastSessionDate === yesterday) {
+  if (user.lastSessionDate === yesterday)
     return { streak: user.streak + 1, lastSessionDate: today };
-  }
   return { streak: 1, lastSessionDate: today };
 }
 
 function computeBadges(user: User): string[] {
   const badges = new Set(user.badges);
   const totalItems = user.sessions.reduce((s, r) => s + r.quantity, 0);
+  const totalCans = user.sessions
+    .filter((s) => s.itemType === "can")
+    .reduce((s, r) => s + r.quantity, 0);
+  const totalBottles = user.sessions
+    .filter((s) => s.itemType === "bottle")
+    .reduce((s, r) => s + r.quantity, 0);
+  const maxCombo = Math.max(...user.sessions.map((s) => s.quantity), 0);
+  const hour = new Date().getHours();
+
   if (user.sessions.length >= 1) badges.add("first_recycle");
   if (totalItems >= 10) badges.add("ten_items");
   if (totalItems >= 50) badges.add("fifty_items");
   if (totalItems >= 100) badges.add("hundred_items");
   if (user.streak >= 7) badges.add("week_streak");
+  if (user.streak >= 30) badges.add("month_streak");
   if (user.points >= 1000) badges.add("points_1k");
   if (user.points >= 5000) badges.add("points_5k");
+  if (maxCombo >= 10) badges.add("combo_master");
+  if (totalCans >= 25) badges.add("can_king");
+  if (totalBottles >= 25) badges.add("bottle_boss");
+  if (hour < 9) badges.add("early_bird");
+
   return Array.from(badges);
 }
 
@@ -274,13 +305,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return raw ? (JSON.parse(raw) as User[]) : [];
   }, []);
 
-  const saveUsers = useCallback(
-    async (users: User[]) => {
-      await AsyncStorage.setItem(KEYS.USERS, JSON.stringify(users));
-      setAllUsers(users);
-    },
-    []
-  );
+  const saveUsers = useCallback(async (users: User[]) => {
+    await AsyncStorage.setItem(KEYS.USERS, JSON.stringify(users));
+    setAllUsers(users);
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -323,11 +351,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const id = identifier.toLowerCase().trim();
     const users = await loadUsers();
     const found = users.find(
-      (u) =>
-        u.email.toLowerCase() === id || u.usn.toLowerCase() === id
+      (u) => u.email.toLowerCase() === id || u.usn.toLowerCase() === id
     );
     if (!found)
-      return { success: false, error: "No account found with these credentials." };
+      return {
+        success: false,
+        error: "No account found with these credentials.",
+      };
     if (found.passwordHash !== simpleHash(password))
       return { success: false, error: "Incorrect password." };
     await AsyncStorage.setItem(KEYS.CURRENT_USER_ID, found.id);
@@ -352,7 +382,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const users = await loadUsers();
-
     if (users.find((u) => u.email.toLowerCase() === emailLower)) {
       return {
         success: false,
@@ -360,10 +389,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
     if (users.find((u) => u.usn.toUpperCase() === usnUpper)) {
-      return {
-        success: false,
-        error: "This USN is already registered.",
-      };
+      return { success: false, error: "This USN is already registered." };
     }
 
     const newUser: User = {
@@ -397,10 +423,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const addRecyclingSession = async (
     itemType: "can" | "bottle",
     quantity: number
-  ): Promise<{ pointsEarned: number; carbonReduced: number }> => {
+  ): Promise<SessionResult> => {
     if (!user) throw new Error("Not logged in");
 
-    const pointsEarned =
+    const basePoints =
       itemType === "can"
         ? POINTS_PER_CAN * quantity
         : POINTS_PER_BOTTLE * quantity;
@@ -408,6 +434,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       itemType === "can"
         ? CO2_PER_CAN * quantity
         : CO2_PER_BOTTLE * quantity;
+
+    const { total: multiplier } = getMultiplier(user.streak, quantity);
+    const pointsEarned = Math.round(basePoints * multiplier);
 
     const session: RecyclingSession = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 9),
@@ -420,6 +449,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { streak: newStreak, lastSessionDate } = computeStreak(user);
 
+    const prevLevel = getLevelInfo(user.points).level;
+
     const updatedUser: User = {
       ...user,
       points: user.points + pointsEarned,
@@ -429,7 +460,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastSessionDate,
       sessions: [session, ...user.sessions],
     };
+
+    const prevBadges = new Set(user.badges);
     updatedUser.badges = computeBadges(updatedUser);
+    const newBadges = updatedUser.badges.filter((b) => !prevBadges.has(b));
+
+    const newLevelInfo = getLevelInfo(updatedUser.points);
+    const leveledUp = newLevelInfo.level > prevLevel;
+
+    // Daily challenge check
+    const challenge = getTodaysChallenge();
+    const today = new Date().toISOString().split("T")[0];
+    const todaySessions = updatedUser.sessions.filter(
+      (s) => s.timestamp.split("T")[0] === today
+    );
+    const prevTodaySessions = user.sessions.filter(
+      (s) => s.timestamp.split("T")[0] === today
+    );
+    const prevProgress = computeChallengeProgress(
+      challenge,
+      prevTodaySessions.map((s) => ({
+        itemType: s.itemType,
+        quantity: s.quantity,
+        pointsEarned: s.pointsEarned,
+      }))
+    );
+    const newProgress = computeChallengeProgress(
+      challenge,
+      todaySessions.map((s) => ({
+        itemType: s.itemType,
+        quantity: s.quantity,
+        pointsEarned: s.pointsEarned,
+      }))
+    );
+    const challengeCompleted =
+      prevProgress < challenge.target && newProgress >= challenge.target;
+    const challengeBonus = challengeCompleted ? challenge.bonusPoints : 0;
+
+    if (challengeBonus > 0) {
+      updatedUser.points += challengeBonus;
+    }
 
     const users = await loadUsers();
     const updated = users.map((u) => (u.id === user.id ? updatedUser : u));
@@ -438,7 +508,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    return { pointsEarned, carbonReduced };
+    return {
+      pointsEarned,
+      basePoints,
+      multiplier,
+      carbonReduced,
+      newBadges,
+      leveledUp,
+      newLevel: newLevelInfo.level,
+      newTitle: newLevelInfo.title,
+      challengeCompleted,
+      challengeBonus,
+    };
   };
 
   const refreshLeaderboard = async () => {
