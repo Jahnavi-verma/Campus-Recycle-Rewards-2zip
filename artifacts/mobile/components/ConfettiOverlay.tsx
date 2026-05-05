@@ -1,24 +1,10 @@
-import React, { useEffect, useMemo } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
+import React, { useEffect, useMemo, useRef } from "react";
+import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
 
 const COLORS = [
-  "#FFD700",
-  "#FF6B6B",
-  "#4CAF50",
-  "#00BCD4",
-  "#FF9800",
-  "#E91E63",
-  "#7C4DFF",
-  "#00E676",
-  "#FFEB3B",
-  "#29B6F6",
+  "#FFD700", "#FF6B6B", "#4CAF50", "#00BCD4",
+  "#FF9800", "#E91E63", "#7C4DFF", "#00E676",
+  "#FFEB3B", "#29B6F6", "#FF4081", "#69F0AE",
 ];
 
 interface PieceConfig {
@@ -29,96 +15,90 @@ interface PieceConfig {
   size: number;
   initialRotation: number;
   isCircle: boolean;
+  driftX: number;
+  duration: number;
 }
 
-function ConfettiPiece({
-  delay,
-  x,
-  color,
-  size,
-  initialRotation,
-  isCircle,
-}: PieceConfig) {
+function ConfettiPiece({ delay, x, color, size, initialRotation, isCircle, driftX, duration }: PieceConfig) {
   const { height: H } = useWindowDimensions();
-  const translateY = useSharedValue(-80);
-  const translateX = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const rotate = useSharedValue(initialRotation);
-  const scale = useSharedValue(0);
+  const translateY = useRef(new Animated.Value(-80)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(initialRotation)).current;
+  const scale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    scale.value = withDelay(delay, withTiming(1, { duration: 100 }));
-    opacity.value = withDelay(delay, withTiming(1, { duration: 100 }));
-    translateY.value = withDelay(
-      delay,
-      withTiming(H + 80, {
-        duration: 2800 + Math.random() * 1200,
-        easing: Easing.in(Easing.quad),
-      })
-    );
-    translateX.value = withDelay(
-      delay,
-      withTiming((Math.random() - 0.5) * 120, { duration: 2000 })
-    );
-    rotate.value = withDelay(
-      delay,
-      withTiming(initialRotation + 540 + Math.random() * 360, {
-        duration: 3000,
-      })
-    );
-    opacity.value = withDelay(
-      delay + 2200,
-      withTiming(0, { duration: 600 })
-    );
+    const nd = false;
+
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.parallel([
+        Animated.timing(scale, { toValue: 1, duration: 120, useNativeDriver: nd }),
+        Animated.timing(opacity, { toValue: 1, duration: 120, useNativeDriver: nd }),
+        Animated.timing(translateY, {
+          toValue: H + 100,
+          duration,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: nd,
+        }),
+        Animated.timing(translateX, {
+          toValue: driftX,
+          duration: duration * 0.75,
+          useNativeDriver: nd,
+        }),
+        Animated.timing(rotate, {
+          toValue: initialRotation + 540 + Math.random() * 360,
+          duration,
+          useNativeDriver: nd,
+        }),
+      ]),
+    ]).start();
+
+    Animated.sequence([
+      Animated.delay(delay + duration * 0.75),
+      Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: nd }),
+    ]).start();
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: translateY.value },
-      { translateX: translateX.value },
-      { rotate: `${rotate.value}deg` },
-      { scale: scale.value },
-    ],
-    opacity: opacity.value,
-  }));
+  const rotateDeg = rotate.interpolate({
+    inputRange: [0, 360],
+    outputRange: ["0deg", "360deg"],
+  });
 
   return (
     <Animated.View
-      style={[
-        {
-          position: "absolute",
-          left: x,
-          top: 0,
-          width: size,
-          height: isCircle ? size : size * 0.5,
-          backgroundColor: color,
-          borderRadius: isCircle ? size / 2 : 2,
-        },
-        animStyle,
-      ]}
+      style={{
+        position: "absolute",
+        left: x,
+        top: 0,
+        width: size,
+        height: isCircle ? size : size * 0.45,
+        backgroundColor: color,
+        borderRadius: isCircle ? size / 2 : 2,
+        opacity,
+        transform: [{ translateY }, { translateX }, { rotate: rotateDeg }, { scale }],
+      }}
     />
   );
 }
 
-interface Props {
-  visible: boolean;
-}
-
-export function ConfettiOverlay({ visible }: Props) {
+export function ConfettiOverlay({ visible }: { visible: boolean }) {
   const { width: W } = useWindowDimensions();
 
   const pieces = useMemo<PieceConfig[]>(
     () =>
-      Array.from({ length: 70 }, (_, i) => ({
+      Array.from({ length: 80 }, (_, i) => ({
         id: i,
-        delay: Math.random() * 1400,
+        delay: Math.random() * 1200,
         x: Math.random() * W,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        size: Math.random() * 12 + 5,
+        size: Math.random() * 14 + 6,
         initialRotation: Math.random() * 360,
-        isCircle: Math.random() > 0.5,
+        isCircle: Math.random() > 0.55,
+        driftX: (Math.random() - 0.5) * 160,
+        duration: 2600 + Math.random() * 1400,
       })),
-    [W]
+    [visible] // regenerate each time it becomes visible
   );
 
   if (!visible) return null;

@@ -100,10 +100,10 @@ export default function ScanScreen() {
     setStep("success");
     setShowConfetti(true);
 
-    Animated.spring(successScale, { toValue: 1, tension: 60, friction: 7, useNativeDriver: true }).start();
+    Animated.spring(successScale, { toValue: 1, tension: 60, friction: 7, useNativeDriver: false }).start();
     Animated.sequence([
-      Animated.timing(pointsBounce, { toValue: -12, duration: 150, useNativeDriver: true }),
-      Animated.spring(pointsBounce, { toValue: 0, tension: 100, friction: 5, useNativeDriver: true }),
+      Animated.timing(pointsBounce, { toValue: -12, duration: 150, useNativeDriver: false }),
+      Animated.spring(pointsBounce, { toValue: 0, tension: 100, friction: 5, useNativeDriver: false }),
     ]).start();
 
     setTimeout(() => setShowConfetti(false), 3200);

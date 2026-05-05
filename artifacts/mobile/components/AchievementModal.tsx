@@ -46,17 +46,17 @@ export function AchievementModal({ visible, data, onClose }: Props) {
           toValue: 1,
           tension: 60,
           friction: 7,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start(() => {
         Animated.sequence([
-          Animated.timing(bounceAnim, { toValue: -10, duration: 150, useNativeDriver: true }),
-          Animated.spring(bounceAnim, { toValue: 0, tension: 100, friction: 5, useNativeDriver: true }),
+          Animated.timing(bounceAnim, { toValue: -10, duration: 150, useNativeDriver: false }),
+          Animated.spring(bounceAnim, { toValue: 0, tension: 100, friction: 5, useNativeDriver: false }),
         ]).start();
       });
     }

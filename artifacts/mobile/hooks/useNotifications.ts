@@ -1,18 +1,26 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+const isSupported = Platform.OS !== "web";
+
+// setNotificationHandler must be called at module level, but crashes in Expo Go SDK 53+
+// Wrap in try/catch so it degrades gracefully.
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch {
+  // expo-notifications push features unavailable in this build (Expo Go SDK 53+)
+}
 
 export async function requestNotificationPermissions(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
+  if (!isSupported) return false;
   try {
     const { status: existing } = await Notifications.getPermissionsAsync();
     if (existing === "granted") return true;
@@ -24,10 +32,9 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 export async function scheduleDailyReminders(): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (!isSupported) return;
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "binGO Morning Nudge",
@@ -40,7 +47,6 @@ export async function scheduleDailyReminders(): Promise<void> {
         minute: 0,
       },
     });
-
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Streak Alert!",
@@ -57,12 +63,12 @@ export async function scheduleDailyReminders(): Promise<void> {
 }
 
 export async function sendBadgeNotification(badgeName: string): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (!isSupported) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "New Badge Unlocked!",
-        body: `You've earned the "${badgeName}" badge. Keep going!`,
+        body: `You earned the "${badgeName}" badge. Keep going!`,
         data: { type: "badge" },
       },
       trigger: null,
@@ -70,16 +76,13 @@ export async function sendBadgeNotification(badgeName: string): Promise<void> {
   } catch {}
 }
 
-export async function sendLevelUpNotification(
-  level: number,
-  title: string
-): Promise<void> {
-  if (Platform.OS === "web") return;
+export async function sendLevelUpNotification(level: number, title: string): Promise<void> {
+  if (!isSupported) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Level Up!",
-        body: `You reached Level ${level}: ${title}. The campus is proud of you!`,
+        body: `You reached Level ${level}: ${title}. The campus is proud!`,
         data: { type: "levelup" },
       },
       trigger: null,
@@ -88,7 +91,7 @@ export async function sendLevelUpNotification(
 }
 
 export async function sendStreakNotification(streak: number): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (!isSupported) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -101,15 +104,13 @@ export async function sendStreakNotification(streak: number): Promise<void> {
   } catch {}
 }
 
-export async function sendChallengeCompleteNotification(
-  bonus: number
-): Promise<void> {
-  if (Platform.OS === "web") return;
+export async function sendChallengeCompleteNotification(bonus: number): Promise<void> {
+  if (!isSupported) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Daily Challenge Complete!",
-        body: `You completed today's challenge and earned +${bonus} bonus points!`,
+        body: `You finished today's challenge and earned +${bonus} bonus points!`,
         data: { type: "challenge" },
       },
       trigger: null,
