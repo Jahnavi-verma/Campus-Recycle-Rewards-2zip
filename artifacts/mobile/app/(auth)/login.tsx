@@ -48,11 +48,11 @@ export default function LoginScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={["#1B5E20", "#2E7D32"]}
+        colors={["#00251A", "#004D40", "#00695C"]}
         style={[styles.header, { paddingTop: insets.top + 32 }]}
       >
         <View style={styles.logoMark}>
-          <Feather name="refresh-cw" size={28} color="#FFFFFF" />
+          <Text style={styles.logoEmoji}>♻</Text>
         </View>
         <Text style={styles.appName}>binGO</Text>
         <Text style={styles.tagline}>Welcome back, eco-warrior</Text>
@@ -153,29 +153,34 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: {
     alignItems: "center",
-    paddingBottom: 40,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    paddingBottom: 44,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
   logoMark: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    width: 68,
+    height: 68,
+    borderRadius: 22,
+    backgroundColor: "rgba(167,255,235,0.15)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(167,255,235,0.25)",
+  },
+  logoEmoji: {
+    fontSize: 36,
   },
   appName: {
-    fontSize: 36,
-    fontFamily: "Inter_700Bold",
+    fontSize: 42,
+    fontFamily: "Outfit_800ExtraBold",
     color: "#FFFFFF",
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   tagline: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.72)",
+    fontFamily: "Outfit_400Regular",
+    color: "rgba(255,255,255,0.6)",
     marginTop: 4,
   },
   formContainer: {
@@ -183,47 +188,49 @@ const styles = StyleSheet.create({
     paddingTop: 36,
   },
   formTitle: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontSize: 28,
+    fontFamily: "Outfit_700Bold",
     marginBottom: 24,
+    letterSpacing: -0.5,
   },
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 16,
   },
   errorText: {
     color: "#C62828",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_500Medium",
     flex: 1,
   },
   label: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_600SemiBold",
     marginBottom: 8,
     marginTop: 4,
+    letterSpacing: 0.2,
   },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     marginBottom: 16,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   submitBtn: {
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 18,
     alignItems: "center",
     marginTop: 8,
@@ -232,8 +239,8 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: "row",
@@ -242,10 +249,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   footerLink: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_700Bold",
   },
 });

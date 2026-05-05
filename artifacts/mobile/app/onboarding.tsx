@@ -14,40 +14,190 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
-import { useColors } from "@/hooks/useColors";
 
-const { width } = Dimensions.get("window");
+const { width: W, height: H } = Dimensions.get("window");
 
 const SLIDES = [
   {
+    id: "0",
+    gradient: ["#00251A", "#004D40", "#00695C"] as [string, string, string],
+    accent: "#A7FFEB",
+    emoji: "♻",
+    emojiBg: "rgba(167,255,235,0.12)",
+    title: "binGO",
+    titleSize: 80,
+    sub: "Your campus recycling companion",
+    body: "Turn everyday waste into rewards. Built exclusively for BMSCE students.",
+    circleColors: ["rgba(167,255,235,0.08)", "rgba(0,191,165,0.10)", "rgba(255,255,255,0.05)"],
+  },
+  {
     id: "1",
-    headline: "Scan.\nRecycle.\nEarn.",
-    body: "Turn your everyday recycling into real rewards — right here on the BMSCE campus.",
-    icon: "♻",
+    gradient: ["#0A2900", "#1B5E20", "#2E7D32"] as [string, string, string],
+    accent: "#CCFF90",
+    emoji: "🥤",
+    emojiBg: "rgba(204,255,144,0.10)",
+    title: "Scan.\nLog.\nEarn.",
+    titleSize: 60,
+    sub: "Three taps, real rewards",
+    body: "Scan the bin's QR code, log your cans & bottles, and watch your score climb.",
+    circleColors: ["rgba(204,255,144,0.07)", "rgba(76,175,80,0.10)", "rgba(255,255,255,0.04)"],
   },
   {
     id: "2",
-    headline: "Every Can\nCounts.",
-    body: "Scan the bin's QR code, log your cans and bottles, and watch your points soar.",
-    icon: "🥤",
-  },
-  {
-    id: "3",
-    headline: "Lead the\nGreen Board.",
-    body: "Compete with fellow BMSCE students, earn badges, and make the campus greener.",
-    icon: "🏆",
+    gradient: ["#1A1A00", "#33691E", "#558B2F"] as [string, string, string],
+    accent: "#FFD180",
+    emoji: "🏆",
+    emojiBg: "rgba(255,209,128,0.12)",
+    title: "Lead the\nGreen\nBoard.",
+    titleSize: 54,
+    sub: "Campus-wide competition",
+    body: "Compete with BMSCE students, earn badges, rise the ranks, and make your campus proud.",
+    circleColors: ["rgba(255,209,128,0.08)", "rgba(255,193,7,0.07)", "rgba(255,255,255,0.04)"],
   },
 ];
 
+interface FloatCircleProps {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delay: number;
+  duration: number;
+}
+
+function FloatCircle({ x, y, size, color, delay, duration }: FloatCircleProps) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(anim, { toValue: 1, duration, delay, useNativeDriver: false }),
+          Animated.timing(scaleAnim, { toValue: 1.08, duration, useNativeDriver: false }),
+        ]),
+        Animated.parallel([
+          Animated.timing(anim, { toValue: 0, duration, useNativeDriver: false }),
+          Animated.timing(scaleAnim, { toValue: 1, duration, useNativeDriver: false }),
+        ]),
+      ])
+    ).start();
+  }, []);
+
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -28] });
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        transform: [{ translateY }, { scale: scaleAnim }],
+      }}
+    />
+  );
+}
+
+interface SlideProps {
+  slide: (typeof SLIDES)[0];
+  index: number;
+  scrollX: Animated.Value;
+}
+
+function Slide({ slide, index, scrollX }: SlideProps) {
+  const inputRange = [(index - 1) * W, index * W, (index + 1) * W];
+
+  const titleTranslate = scrollX.interpolate({
+    inputRange,
+    outputRange: [60, 0, -60],
+    extrapolate: "clamp",
+  });
+
+  const contentOpacity = scrollX.interpolate({
+    inputRange,
+    outputRange: [0, 1, 0],
+    extrapolate: "clamp",
+  });
+
+  const emojiScale = scrollX.interpolate({
+    inputRange,
+    outputRange: [0.7, 1, 0.7],
+    extrapolate: "clamp",
+  });
+
+  const CIRCLES = [
+    { x: -60, y: H * 0.05, size: 200, color: slide.circleColors[0], delay: 0, duration: 3800 },
+    { x: W * 0.6, y: H * 0.1, size: 160, color: slide.circleColors[1], delay: 600, duration: 4200 },
+    { x: W * 0.2, y: H * 0.55, size: 240, color: slide.circleColors[2], delay: 1200, duration: 5000 },
+    { x: -40, y: H * 0.65, size: 120, color: slide.circleColors[0], delay: 300, duration: 3400 },
+    { x: W * 0.75, y: H * 0.5, size: 100, color: slide.circleColors[1], delay: 900, duration: 4600 },
+  ];
+
+  return (
+    <View style={{ width: W }}>
+      {CIRCLES.map((c, i) => (
+        <FloatCircle key={i} {...c} />
+      ))}
+
+      <Animated.View style={[styles.slideContent, { opacity: contentOpacity }]}>
+        <Animated.View
+          style={[
+            styles.emojiCircle,
+            {
+              backgroundColor: slide.emojiBg,
+              transform: [{ scale: emojiScale }],
+            },
+          ]}
+        >
+          <Text style={styles.emojiText}>{slide.emoji}</Text>
+        </Animated.View>
+
+        <Animated.View style={{ transform: [{ translateY: titleTranslate }] }}>
+          <Text
+            style={[
+              styles.slideTitle,
+              { fontSize: slide.titleSize, lineHeight: slide.titleSize * 1.1 },
+            ]}
+          >
+            {slide.title}
+          </Text>
+        </Animated.View>
+
+        <View style={[styles.accentBadge, { backgroundColor: `${slide.accent}20`, borderColor: `${slide.accent}40` }]}>
+          <Text style={[styles.accentBadgeText, { color: slide.accent }]}>
+            {slide.sub}
+          </Text>
+        </View>
+
+        <Text style={styles.bodyText}>{slide.body}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function OnboardingScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { completeOnboarding } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const btnScale = useRef(new Animated.Value(1)).current;
 
+  const slide = SLIDES[activeIndex];
   const isLast = activeIndex === SLIDES.length - 1;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(btnScale, { toValue: 1.03, duration: 900, useNativeDriver: false }),
+        Animated.timing(btnScale, { toValue: 1, duration: 900, useNativeDriver: false }),
+      ])
+    ).start();
+  }, []);
 
   const handleNext = async () => {
     if (isLast) {
@@ -64,17 +214,11 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={["#1B5E20", "#2E7D32", "#388E3C"]}
-      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}
-    >
-      <TouchableOpacity
-        style={styles.skipBtn}
-        onPress={handleSkip}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={slide.gradient}
+        style={StyleSheet.absoluteFill}
+      />
 
       <Animated.FlatList
         ref={flatListRef}
@@ -83,132 +227,156 @@ export default function OnboardingScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
+        bounces={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: false }
         )}
         onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+          const idx = Math.round(e.nativeEvent.contentOffset.x / W);
           setActiveIndex(idx);
         }}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.slide, { width }]}>
-            <Text style={styles.slideIcon}>{item.icon}</Text>
-            <Text style={styles.headline}>{item.headline}</Text>
-            <Text style={styles.body}>{item.body}</Text>
-          </View>
+        renderItem={({ item, index }) => (
+          <Slide slide={item} index={index} scrollX={scrollX} />
         )}
+        style={{ paddingTop: Platform.OS === "web" ? 60 : insets.top + 8 }}
       />
 
-      <View style={styles.dots}>
-        {SLIDES.map((_, i) => {
-          const opacity = scrollX.interpolate({
-            inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-            outputRange: [0.3, 1, 0.3],
-            extrapolate: "clamp",
-          });
-          const scaleX = scrollX.interpolate({
-            inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-            outputRange: [1, 2.4, 1],
-            extrapolate: "clamp",
-          });
-          return (
-            <Animated.View
-              key={i}
-              style={[styles.dot, { opacity, transform: [{ scaleX }] }]}
-            />
-          );
-        })}
+      <View style={[styles.footer, { paddingBottom: Platform.OS === "web" ? 40 : insets.bottom + 28 }]}>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <Text style={[styles.skipText, { color: "rgba(255,255,255,0.5)" }]}>
+            {isLast ? "" : "Skip"}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.dotsRow}>
+          {SLIDES.map((_, i) => {
+            const width = scrollX.interpolate({
+              inputRange: [(i - 1) * W, i * W, (i + 1) * W],
+              outputRange: [8, 28, 8],
+              extrapolate: "clamp",
+            });
+            const opacity = scrollX.interpolate({
+              inputRange: [(i - 1) * W, i * W, (i + 1) * W],
+              outputRange: [0.35, 1, 0.35],
+              extrapolate: "clamp",
+            });
+            return (
+              <Animated.View
+                key={i}
+                style={[styles.dot, { width, opacity, backgroundColor: slide.accent }]}
+              />
+            );
+          })}
+        </View>
+
+        <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+          <TouchableOpacity
+            style={[styles.nextBtn, { backgroundColor: slide.accent }]}
+            onPress={handleNext}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.nextBtnText, { color: "#003322" }]}>
+              {isLast ? "Get Started" : "Next"}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
-      <TouchableOpacity
-        style={styles.nextBtn}
-        onPress={handleNext}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.nextBtnText}>
-          {isLast ? "Get Started" : "Next"}
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={[styles.campusTag, Platform.OS === "web" ? { marginBottom: 34 } : {}]}>
-        BMSCE Campus Recycling Program
-      </Text>
-    </LinearGradient>
+      <Text style={styles.campusTag}>BMSCE Campus Recycling Program</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: { flex: 1 },
+  slideContent: {
     flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 32,
+  },
+  emojiCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     alignItems: "center",
-  },
-  skipBtn: {
-    alignSelf: "flex-end",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  skipText: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
-  slide: {
-    alignItems: "flex-start",
     justifyContent: "center",
-    paddingHorizontal: 36,
-    paddingTop: 40,
+    marginBottom: 36,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.12)",
   },
-  slideIcon: {
-    fontSize: 64,
-    marginBottom: 32,
+  emojiText: {
+    fontSize: 72,
   },
-  headline: {
-    fontSize: 48,
-    fontFamily: "Inter_700Bold",
+  slideTitle: {
+    fontFamily: "Outfit_800ExtraBold",
     color: "#FFFFFF",
-    lineHeight: 56,
+    letterSpacing: -1.5,
     marginBottom: 20,
   },
-  body: {
-    fontSize: 17,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.82)",
+  accentBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  accentBadgeText: {
+    fontSize: 13,
+    fontFamily: "Outfit_600SemiBold",
+    letterSpacing: 0.3,
+  },
+  bodyText: {
+    fontSize: 16,
+    fontFamily: "Outfit_400Regular",
+    color: "rgba(255,255,255,0.65)",
     lineHeight: 26,
     maxWidth: 300,
   },
-  dots: {
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 28,
+    paddingTop: 12,
+  },
+  skipBtn: {
+    minWidth: 50,
+    paddingVertical: 8,
+  },
+  skipText: {
+    fontSize: 15,
+    fontFamily: "Outfit_500Medium",
+  },
+  dotsRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 32,
   },
   dot: {
-    width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.9)",
   },
   nextBtn: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 48,
-    marginBottom: 20,
-    minWidth: 220,
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    minWidth: 100,
     alignItems: "center",
   },
   nextBtnText: {
-    color: "#1B5E20",
-    fontSize: 17,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
+    fontSize: 16,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 0.2,
   },
   campusTag: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    color: "rgba(255,255,255,0.25)",
+    fontSize: 11,
+    fontFamily: "Outfit_400Regular",
     letterSpacing: 0.5,
+    paddingBottom: 8,
   },
 });

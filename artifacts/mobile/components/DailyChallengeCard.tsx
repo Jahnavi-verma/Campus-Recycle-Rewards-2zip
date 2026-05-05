@@ -173,12 +173,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     letterSpacing: 1,
   },
   description: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     lineHeight: 22,
   },
   bonusChip: {
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
   bonusText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   bonusSub: {
     color: "rgba(255,255,255,0.8)",
     fontSize: 10,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   progressSection: {
     gap: 8,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_500Medium",
   },
   completedRow: {
     flexDirection: "row",
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
   completedText: {
     color: "#FFFFFF",
     fontSize: 12,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   remainText: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
 });

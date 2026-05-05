@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     color: "#FFFFFF",
   },
   logoutBtn: {
@@ -313,12 +313,12 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 24,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     color: "#FFFFFF",
   },
   userMeta: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     color: "rgba(255,255,255,0.7)",
     marginTop: 2,
     marginBottom: 16,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   levelText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_600SemiBold",
   },
   streakBadge: {
     flexDirection: "row",
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   streakText: {
     color: "#FFB300",
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_600SemiBold",
   },
   progressBarBg: {
     height: 6,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     color: "rgba(255,255,255,0.6)",
   },
   statsGrid: {
@@ -386,12 +386,12 @@ const styles = StyleSheet.create({
   },
   statVal: {
     fontSize: 22,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     marginTop: 4,
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     textAlign: "center",
   },
   section: {
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     marginBottom: 12,
   },
   badgesRow: {
@@ -424,12 +424,12 @@ const styles = StyleSheet.create({
   },
   badgeName: {
     fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     textAlign: "center",
   },
   badgeDesc: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     textAlign: "center",
     lineHeight: 16,
   },
@@ -452,21 +452,21 @@ const styles = StyleSheet.create({
   sessionInfo: { flex: 1 },
   sessionType: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_600SemiBold",
   },
   sessionDate: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     marginTop: 2,
   },
   sessionRight: { alignItems: "flex-end" },
   sessionPts: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   sessionPtsLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   emptyState: {
     alignItems: "center",
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     textAlign: "center",
     lineHeight: 22,
   },

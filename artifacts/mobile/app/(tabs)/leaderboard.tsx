@@ -82,7 +82,7 @@ function LeaderboardRow({
             style={[
               styles.userName,
               { color: colors.foreground },
-              isCurrentUser && { fontFamily: "Inter_700Bold" },
+              isCurrentUser && { fontFamily: "Outfit_700Bold" },
             ]}
             numberOfLines={1}
           >
@@ -193,12 +193,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     color: "#FFFFFF",
   },
   headerSub: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     color: "rgba(255,255,255,0.7)",
     marginTop: 2,
     marginBottom: 16,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   myRankText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_600SemiBold",
   },
   list: { paddingTop: 16, paddingHorizontal: 16, gap: 10 },
   row: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   avatar: {
     width: 44,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   nameCol: { flex: 1 },
   nameRow: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_600SemiBold",
     flex: 1,
   },
   youBadge: {
@@ -265,12 +265,12 @@ const styles = StyleSheet.create({
   youBadgeText: {
     color: "#FFFFFF",
     fontSize: 10,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     letterSpacing: 0.5,
   },
   usnText: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     marginTop: 2,
   },
   pointsCol: {
@@ -278,10 +278,10 @@ const styles = StyleSheet.create({
   },
   pointsVal: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
   pointsLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
 });

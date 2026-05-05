@@ -65,13 +65,10 @@ export default function SignupScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={["#1B5E20", "#2E7D32"]}
+        colors={["#00251A", "#004D40", "#00695C"]}
         style={[styles.header, { paddingTop: insets.top + 20 }]}
       >
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.appName}>Create Account</Text>
@@ -162,16 +159,10 @@ export default function SignupScreen() {
             />
           </Field>
 
-          <View
-            style={[
-              styles.noteBox,
-              { backgroundColor: colors.secondary, borderColor: colors.border },
-            ]}
-          >
+          <View style={[styles.noteBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <Feather name="info" size={14} color={colors.primary} />
             <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-              Only BMSCE students with an @bmsce.ac.in email can register. Your
-              USN must be unique.
+              Only BMSCE students with a @bmsce.ac.in email can register. Your USN must be unique.
             </Text>
           </View>
 
@@ -216,15 +207,8 @@ function Field({
   const colors = useColors();
   return (
     <View style={styles.fieldWrap}>
-      <Text style={[styles.label, { color: colors.mutedForeground }]}>
-        {label}
-      </Text>
-      <View
-        style={[
-          styles.inputWrap,
-          { borderColor: colors.border, backgroundColor: colors.input },
-        ]}
-      >
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>
+      <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.input }]}>
         <Feather name={icon} size={17} color={colors.mutedForeground} />
         {children}
       </View>
@@ -238,22 +222,23 @@ const styles = StyleSheet.create({
   header: {
     paddingBottom: 32,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
   backBtn: {
     marginBottom: 16,
     alignSelf: "flex-start",
   },
   appName: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
+    fontSize: 30,
+    fontFamily: "Outfit_700Bold",
     color: "#FFFFFF",
+    letterSpacing: -0.5,
   },
   tagline: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.72)",
+    fontFamily: "Outfit_400Regular",
+    color: "rgba(255,255,255,0.6)",
     marginTop: 4,
   },
   formContainer: {
@@ -265,54 +250,55 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 16,
   },
   errorText: {
     color: "#C62828",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_500Medium",
     flex: 1,
   },
   fieldWrap: { marginBottom: 4 },
   label: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_600SemiBold",
     marginBottom: 8,
     marginTop: 8,
+    letterSpacing: 0.2,
   },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   noteBox: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     marginTop: 12,
     marginBottom: 4,
   },
   noteText: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     flex: 1,
     lineHeight: 18,
   },
   submitBtn: {
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 18,
     alignItems: "center",
     marginTop: 20,
@@ -321,8 +307,8 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: "row",
@@ -331,10 +317,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
   },
   footerLink: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Outfit_700Bold",
   },
 });

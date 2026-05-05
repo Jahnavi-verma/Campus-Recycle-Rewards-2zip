@@ -201,19 +201,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     marginBottom: 4,
     textAlign: "center",
   },
   badgeName: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Outfit_400Regular",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Outfit_500Medium",
   },
   btn: {
     borderRadius: 16,
@@ -241,6 +241,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Outfit_700Bold",
   },
 });
