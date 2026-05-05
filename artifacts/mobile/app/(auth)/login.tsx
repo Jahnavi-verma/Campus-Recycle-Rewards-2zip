@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password) {
-      setError("Please fill in all fields.");
+      setError("fill in both fields first.");
       return;
     }
     setError("");
@@ -41,21 +41,22 @@ export default function LoginScreen() {
     if (result.success) {
       router.replace("/(tabs)");
     } else {
-      setError(result.error ?? "Login failed.");
+      setError(result.error ?? "login failed. try again?");
     }
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Header */}
       <LinearGradient
-        colors={["#00251A", "#004D40", "#00695C"]}
-        style={[styles.header, { paddingTop: insets.top + 32 }]}
+        colors={["#09090B", "#1E1B4B"]}
+        style={[styles.header, { paddingTop: insets.top + 28 }]}
       >
         <View style={styles.logoMark}>
           <Text style={styles.logoEmoji}>♻</Text>
         </View>
         <Text style={styles.appName}>binGO</Text>
-        <Text style={styles.tagline}>Welcome back, eco-warrior</Text>
+        <Text style={styles.tagline}>welcome back 👋</Text>
       </LinearGradient>
 
       <KeyboardAvoidingView
@@ -71,24 +72,22 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={[styles.formTitle, { color: colors.foreground }]}>
-            Sign In
+            sign in
           </Text>
 
           {!!error && (
-            <View style={[styles.errorBox, { backgroundColor: "#FFEBEE" }]}>
-              <Feather name="alert-circle" size={15} color="#C62828" />
+            <View style={[styles.errorBox, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-circle" size={14} color="#DC2626" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
 
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>
-            USN or Email
-          </Text>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>USN or email</Text>
           <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.input }]}>
-            <Feather name="user" size={17} color={colors.mutedForeground} />
+            <Feather name="user" size={16} color={colors.mutedForeground} />
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="1BM22CS001 or email"
+              placeholder="1BM22CS001 or yourname@bmsce.ac.in"
               placeholderTextColor={colors.mutedForeground}
               value={identifier}
               onChangeText={setIdentifier}
@@ -97,25 +96,19 @@ export default function LoginScreen() {
             />
           </View>
 
-          <Text style={[styles.label, { color: colors.mutedForeground }]}>
-            Password
-          </Text>
+          <Text style={[styles.label, { color: colors.mutedForeground }]}>password</Text>
           <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.input }]}>
-            <Feather name="lock" size={17} color={colors.mutedForeground} />
+            <Feather name="lock" size={16} color={colors.mutedForeground} />
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="Password"
+              placeholder="your password"
               placeholderTextColor={colors.mutedForeground}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Feather
-                name={showPassword ? "eye-off" : "eye"}
-                size={17}
-                color={colors.mutedForeground}
-              />
+              <Feather name={showPassword ? "eye-off" : "eye"} size={16} color={colors.mutedForeground} />
             </TouchableOpacity>
           </View>
 
@@ -128,17 +121,17 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitBtnText}>Sign In</Text>
+              <Text style={styles.submitBtnText}>sign in</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-              New to binGO?{" "}
+              new here?{" "}
             </Text>
             <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
               <Text style={[styles.footerLink, { color: colors.primary }]}>
-                Create Account
+                create account →
               </Text>
             </TouchableOpacity>
           </View>
@@ -153,42 +146,37 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: {
     alignItems: "center",
-    paddingBottom: 44,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    paddingBottom: 40,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
   logoMark: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
-    backgroundColor: "rgba(167,255,235,0.15)",
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "rgba(167,139,250,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: "rgba(167,255,235,0.25)",
+    borderColor: "rgba(167,139,250,0.25)",
   },
-  logoEmoji: {
-    fontSize: 36,
-  },
+  logoEmoji: { fontSize: 34 },
   appName: {
-    fontSize: 42,
+    fontSize: 44,
     fontFamily: "Outfit_800ExtraBold",
     color: "#FFFFFF",
-    letterSpacing: -1,
+    letterSpacing: -2,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Outfit_400Regular",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.55)",
     marginTop: 4,
   },
-  formContainer: {
-    paddingHorizontal: 28,
-    paddingTop: 36,
-  },
+  formContainer: { paddingHorizontal: 28, paddingTop: 32 },
   formTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: "Outfit_700Bold",
     marginBottom: 24,
     letterSpacing: -0.5,
@@ -197,32 +185,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 16,
   },
   errorText: {
-    color: "#C62828",
+    color: "#DC2626",
     fontSize: 13,
-    fontFamily: "Outfit_500Medium",
+    fontFamily: "Outfit_400Regular",
     flex: 1,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Outfit_600SemiBold",
     marginBottom: 8,
-    marginTop: 4,
-    letterSpacing: 0.2,
+    marginTop: 6,
+    textTransform: "lowercase",
+    letterSpacing: 0.3,
   },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   input: {
     flex: 1,
@@ -230,29 +220,22 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_400Regular",
   },
   submitBtn: {
-    borderRadius: 18,
-    paddingVertical: 18,
+    borderRadius: 16,
+    paddingVertical: 17,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 10,
     marginBottom: 24,
   },
   submitBtnText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Outfit_700Bold",
-    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
   },
-  footerText: {
-    fontSize: 14,
-    fontFamily: "Outfit_400Regular",
-  },
-  footerLink: {
-    fontSize: 14,
-    fontFamily: "Outfit_700Bold",
-  },
+  footerText: { fontSize: 14, fontFamily: "Outfit_400Regular" },
+  footerLink: { fontSize: 14, fontFamily: "Outfit_600SemiBold" },
 });

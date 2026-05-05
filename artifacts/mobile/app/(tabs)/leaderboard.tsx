@@ -63,7 +63,7 @@ function LeaderboardRow({
       <View
         style={[
           styles.avatar,
-          { backgroundColor: isCurrentUser ? colors.primary : "#C8E6C9" },
+          { backgroundColor: isCurrentUser ? colors.primary : colors.secondary },
         ]}
       >
         <Text
@@ -130,7 +130,7 @@ export default function LeaderboardScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={["#1B5E20", "#2E7D32"]}
+        colors={["#09090B", "#1E1B4B"]}
         style={[
           styles.header,
           {

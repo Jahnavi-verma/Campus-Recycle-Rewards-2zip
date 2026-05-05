@@ -132,7 +132,7 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       <LinearGradient
-        colors={["#1B5E20", "#2E7D32"]}
+        colors={["#09090B", "#1E1B4B"]}
         style={[styles.header, { paddingTop: topPad }]}
       >
         <View style={styles.headerRow}>
@@ -201,7 +201,7 @@ export default function ProfileScreen() {
           icon="wind"
           value={`${user.carbonReduced.toFixed(2)} kg`}
           label="CO2 Saved"
-          accent="#00897B"
+          accent={colors.eco ?? "#22C55E"}
         />
       </View>
 

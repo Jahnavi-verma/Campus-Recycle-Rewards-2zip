@@ -34,19 +34,19 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !usn.trim() || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
+      setError("all fields required.");
       return;
     }
     if (!email.toLowerCase().trim().endsWith("@bmsce.ac.in")) {
-      setError("Only @bmsce.ac.in email addresses are allowed.");
+      setError("only @bmsce.ac.in emails, sorry.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("passwords don't match.");
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError("password needs to be at least 6 characters.");
       return;
     }
 
@@ -58,21 +58,21 @@ export default function SignupScreen() {
     if (result.success) {
       router.replace("/(tabs)");
     } else {
-      setError(result.error ?? "Signup failed.");
+      setError(result.error ?? "signup failed. try again?");
     }
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={["#00251A", "#004D40", "#00695C"]}
-        style={[styles.header, { paddingTop: insets.top + 20 }]}
+        colors={["#09090B", "#1E1B4B"]}
+        style={[styles.header, { paddingTop: insets.top + 16 }]}
       >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color="#FFFFFF" />
+          <Feather name="arrow-left" size={22} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
-        <Text style={styles.appName}>Create Account</Text>
-        <Text style={styles.tagline}>Join the BMSCE Green Movement</Text>
+        <Text style={styles.appName}>join binGO</Text>
+        <Text style={styles.tagline}>bmsce students only 🌿</Text>
       </LinearGradient>
 
       <KeyboardAvoidingView
@@ -88,16 +88,16 @@ export default function SignupScreen() {
           showsVerticalScrollIndicator={false}
         >
           {!!error && (
-            <View style={[styles.errorBox, { backgroundColor: "#FFEBEE" }]}>
-              <Feather name="alert-circle" size={15} color="#C62828" />
+            <View style={[styles.errorBox, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-circle" size={14} color="#DC2626" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
 
-          <Field label="Full Name" icon="user">
+          <Field label="your name" icon="user">
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="e.g. Arjun Sharma"
+              placeholder="e.g. Priya Sharma"
               placeholderTextColor={colors.mutedForeground}
               value={name}
               onChangeText={setName}
@@ -105,7 +105,7 @@ export default function SignupScreen() {
             />
           </Field>
 
-          <Field label="College Email" icon="mail">
+          <Field label="college email" icon="mail">
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
               placeholder="yourname@bmsce.ac.in"
@@ -121,7 +121,7 @@ export default function SignupScreen() {
           <Field label="USN" icon="credit-card">
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="e.g. 1BM22CS001"
+              placeholder="1BM22CS001"
               placeholderTextColor={colors.mutedForeground}
               value={usn}
               onChangeText={(t) => setUsn(t.toUpperCase())}
@@ -130,28 +130,24 @@ export default function SignupScreen() {
             />
           </Field>
 
-          <Field label="Password" icon="lock">
+          <Field label="password" icon="lock">
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="Min. 6 characters"
+              placeholder="at least 6 characters"
               placeholderTextColor={colors.mutedForeground}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Feather
-                name={showPassword ? "eye-off" : "eye"}
-                size={17}
-                color={colors.mutedForeground}
-              />
+              <Feather name={showPassword ? "eye-off" : "eye"} size={16} color={colors.mutedForeground} />
             </TouchableOpacity>
           </Field>
 
-          <Field label="Confirm Password" icon="lock">
+          <Field label="confirm password" icon="lock">
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="Re-enter password"
+              placeholder="same thing again"
               placeholderTextColor={colors.mutedForeground}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -159,10 +155,9 @@ export default function SignupScreen() {
             />
           </Field>
 
-          <View style={[styles.noteBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <Feather name="info" size={14} color={colors.primary} />
+          <View style={[styles.noteBox, { backgroundColor: colors.muted }]}>
             <Text style={[styles.noteText, { color: colors.mutedForeground }]}>
-              Only BMSCE students with a @bmsce.ac.in email can register. Your USN must be unique.
+              🔒 USN must be unique. Only @bmsce.ac.in emails work.
             </Text>
           </View>
 
@@ -175,18 +170,14 @@ export default function SignupScreen() {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitBtnText}>Create Account</Text>
+              <Text style={styles.submitBtnText}>create account →</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-              Already have an account?{" "}
-            </Text>
+            <Text style={[styles.footerText, { color: colors.mutedForeground }]}>already in? </Text>
             <TouchableOpacity onPress={() => router.back()}>
-              <Text style={[styles.footerLink, { color: colors.primary }]}>
-                Sign In
-              </Text>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>sign in</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -195,21 +186,17 @@ export default function SignupScreen() {
   );
 }
 
-function Field({
-  label,
-  icon,
-  children,
-}: {
+function Field({ label, icon, children }: {
   label: string;
   icon: React.ComponentProps<typeof Feather>["name"];
   children: React.ReactNode;
 }) {
   const colors = useColors();
   return (
-    <View style={styles.fieldWrap}>
+    <View style={{ marginBottom: 4 }}>
       <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>
       <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.input }]}>
-        <Feather name={icon} size={17} color={colors.mutedForeground} />
+        <Feather name={icon} size={16} color={colors.mutedForeground} />
         {children}
       </View>
     </View>
@@ -220,86 +207,68 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   header: {
-    paddingBottom: 32,
+    paddingBottom: 28,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
-  backBtn: {
-    marginBottom: 16,
-    alignSelf: "flex-start",
-  },
+  backBtn: { marginBottom: 14, alignSelf: "flex-start" },
   appName: {
-    fontSize: 30,
-    fontFamily: "Outfit_700Bold",
+    fontSize: 32,
+    fontFamily: "Outfit_800ExtraBold",
     color: "#FFFFFF",
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   tagline: {
     fontSize: 14,
     fontFamily: "Outfit_400Regular",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.55)",
     marginTop: 4,
   },
-  formContainer: {
-    paddingHorizontal: 28,
-    paddingTop: 28,
-  },
+  formContainer: { paddingHorizontal: 28, paddingTop: 28 },
   errorBox: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 16,
   },
   errorText: {
-    color: "#C62828",
+    color: "#DC2626",
     fontSize: 13,
-    fontFamily: "Outfit_500Medium",
+    fontFamily: "Outfit_400Regular",
     flex: 1,
   },
-  fieldWrap: { marginBottom: 4 },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Outfit_600SemiBold",
     marginBottom: 8,
-    marginTop: 8,
-    letterSpacing: 0.2,
+    marginTop: 10,
+    textTransform: "lowercase",
+    letterSpacing: 0.3,
   },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Outfit_400Regular",
-  },
+  input: { flex: 1, fontSize: 15, fontFamily: "Outfit_400Regular" },
   noteBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 12,
     marginTop: 12,
     marginBottom: 4,
   },
-  noteText: {
-    fontSize: 12,
-    fontFamily: "Outfit_400Regular",
-    flex: 1,
-    lineHeight: 18,
-  },
+  noteText: { fontSize: 13, fontFamily: "Outfit_400Regular", lineHeight: 20 },
   submitBtn: {
-    borderRadius: 18,
-    paddingVertical: 18,
+    borderRadius: 16,
+    paddingVertical: 17,
     alignItems: "center",
     marginTop: 20,
     marginBottom: 24,
@@ -308,19 +277,8 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Outfit_700Bold",
-    letterSpacing: 0.3,
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 14,
-    fontFamily: "Outfit_400Regular",
-  },
-  footerLink: {
-    fontSize: 14,
-    fontFamily: "Outfit_700Bold",
-  },
+  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+  footerText: { fontSize: 14, fontFamily: "Outfit_400Regular" },
+  footerLink: { fontSize: 14, fontFamily: "Outfit_600SemiBold" },
 });

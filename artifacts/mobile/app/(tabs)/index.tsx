@@ -133,12 +133,12 @@ export default function HomeScreen() {
     >
       {/* Hero */}
       <LinearGradient
-        colors={["#1B5E20", "#2E7D32", "#43A047"]}
+        colors={["#09090B", "#1E1B4B", "#312E81"]}
         style={[styles.hero, { paddingTop: topPad }]}
       >
         <View style={styles.heroTopRow}>
           <View style={styles.heroLeft}>
-            <Text style={styles.greeting}>Hello, {firstName}</Text>
+            <Text style={styles.greeting}>hey, {firstName} 👋</Text>
             <Text style={styles.greetingSub}>
               {new Date().toLocaleDateString("en-IN", {
                 weekday: "long",
@@ -236,7 +236,7 @@ export default function HomeScreen() {
         <View style={styles.scanCtaLeft}>
           <Feather name="camera" size={22} color="#FFFFFF" />
           <View>
-            <Text style={styles.scanCtaTitle}>Start Recycling Session</Text>
+            <Text style={styles.scanCtaTitle}>scan something 📦</Text>
             {hasBonus && (
               <Text style={styles.scanCtaSub}>
                 {multiplierInfo.total}x points active
@@ -272,10 +272,10 @@ export default function HomeScreen() {
       </View>
 
       {/* Campus Community Stats */}
-      <View style={[styles.campusCard, { backgroundColor: "#1B5E20" }]}>
+      <View style={[styles.campusCard, { backgroundColor: "#1E1B4B" }]}>
         <View style={styles.campusHeader}>
           <Feather name="globe" size={16} color="rgba(255,255,255,0.8)" />
-          <Text style={styles.campusTitle}>BMSCE Campus Impact</Text>
+          <Text style={styles.campusTitle}>campus impact so far</Text>
         </View>
         <View style={styles.campusStats}>
           <View style={styles.campusStat}>

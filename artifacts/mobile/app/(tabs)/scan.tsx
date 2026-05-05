@@ -364,7 +364,7 @@ export default function ScanScreen() {
           <ConfettiOverlay visible={showConfetti} />
 
           <Animated.View style={[styles.successBubble, { transform: [{ scale: successScale }, { translateY: pointsBounce }] }]}>
-            <LinearGradient colors={["#2E7D32", "#43A047"]} style={styles.successCircle}>
+            <LinearGradient colors={["#4C1D95", "#6C63FF"]} style={styles.successCircle}>
               <Feather name="check" size={56} color="#FFFFFF" />
             </LinearGradient>
           </Animated.View>
