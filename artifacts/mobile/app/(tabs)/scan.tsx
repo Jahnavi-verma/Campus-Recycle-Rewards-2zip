@@ -22,10 +22,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AchievementData, AchievementModal } from "@/components/AchievementModal";
 import { ConfettiOverlay } from "@/components/ConfettiOverlay";
+import { TriviaModal } from "@/components/TriviaModal";
 import { BADGES, getMultiplier, POINTS_PER_BOTTLE, POINTS_PER_CAN, CO2_PER_CAN, CO2_PER_BOTTLE } from "@/constants/gamification";
+import { getDailyTrivia, TriviaQuestion } from "@/constants/trivia";
 import { useAuth } from "@/context/AuthContext";
 import { sendBadgeNotification, sendLevelUpNotification, sendStreakNotification, sendChallengeCompleteNotification } from "@/hooks/useNotifications";
 import { useColors } from "@/hooks/useColors";
+import { playSuccessPing } from "@/utils/sound";
 
 type ItemType = "can" | "bottle";
 type FlowStep = "idle" | "scanned" | "success";
@@ -69,6 +72,8 @@ export default function ScanScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [achievement, setAchievement] = useState<AchievementData | null>(null);
   const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
+  const [showTrivia, setShowTrivia] = useState(false);
+  const [triviaQuestion] = useState<TriviaQuestion>(getDailyTrivia);
   const scannedRef = useRef(false);
   const successScale = useRef(new Animated.Value(0)).current;
   const pointsBounce = useRef(new Animated.Value(0)).current;
@@ -99,6 +104,7 @@ export default function ScanScreen() {
     setSessionResult(result);
     setStep("success");
     setShowConfetti(true);
+    playSuccessPing();
 
     Animated.spring(successScale, { toValue: 1, tension: 60, friction: 7, useNativeDriver: false }).start();
     Animated.sequence([
@@ -130,16 +136,20 @@ export default function ScanScreen() {
     if (queue.length > 0) {
       setAchievementQueue(queue);
       setAchievement(queue[0]);
+    } else {
+      // Show trivia after a short delay
+      setTimeout(() => setShowTrivia(true), 1800);
     }
   };
 
-  const handleAchievementClose = () => {
+  const handleAchievementCloseWithTrivia = () => {
     const remaining = achievementQueue.slice(1);
     setAchievementQueue(remaining);
     if (remaining.length > 0) {
       setTimeout(() => setAchievement(remaining[0]), 300);
     } else {
       setAchievement(null);
+      setTimeout(() => setShowTrivia(true), 600);
     }
   };
 
@@ -152,6 +162,7 @@ export default function ScanScreen() {
     setShowConfetti(false);
     setAchievement(null);
     setAchievementQueue([]);
+    setShowTrivia(false);
     successScale.setValue(0);
     pointsBounce.setValue(0);
   };
@@ -416,7 +427,13 @@ export default function ScanScreen() {
       <AchievementModal
         visible={!!achievement}
         data={achievement}
-        onClose={handleAchievementClose}
+        onClose={handleAchievementCloseWithTrivia}
+      />
+
+      <TriviaModal
+        visible={showTrivia}
+        question={triviaQuestion}
+        onClose={() => setShowTrivia(false)}
       />
     </View>
   );

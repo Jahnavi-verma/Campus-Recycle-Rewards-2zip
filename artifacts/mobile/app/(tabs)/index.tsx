@@ -14,8 +14,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
-import { FactCard } from "@/components/FactCard";
+import { Mascot } from "@/components/Mascot";
 import { useAuth, User } from "@/context/AuthContext";
+import { getDailyFact } from "@/constants/recyclingFacts";
 import {
   getLevelInfo,
   getMultiplier,
@@ -246,8 +247,24 @@ export default function HomeScreen() {
         <Feather name="arrow-right" size={20} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
 
-      {/* Recycling Fact */}
-      <FactCard />
+      {/* Mascot */}
+      <Mascot level={levelInfo.level} streak={user.streak} />
+
+      {/* Daily Fact */}
+      {(() => {
+        const fact = getDailyFact();
+        return (
+          <View style={[styles.factCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.factHeader}>
+              <Text style={styles.factEmoji}>{fact.emoji}</Text>
+              <View style={[styles.factCategoryPill, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.factCategoryText, { color: colors.primary }]}>{fact.category}</Text>
+              </View>
+            </View>
+            <Text style={[styles.factText, { color: colors.foreground }]}>{fact.text}</Text>
+          </View>
+        );
+      })()}
 
       {/* Top 5 Leaderboard */}
       <View style={[styles.leaderSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -351,8 +368,10 @@ const styles = StyleSheet.create({
   factCard: {
     marginHorizontal: 16, marginTop: 14, borderRadius: 18, padding: 18, borderWidth: 1,
   },
-  factHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  factHeaderText: { fontSize: 11, fontFamily: "Outfit_600SemiBold", letterSpacing: 0.5, textTransform: "uppercase" },
+  factHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  factEmoji: { fontSize: 20 },
+  factCategoryPill: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3 },
+  factCategoryText: { fontSize: 11, fontFamily: "Outfit_600SemiBold" },
   factText: { fontSize: 15, fontFamily: "Outfit_400Regular", lineHeight: 23 },
   leaderSection: { marginHorizontal: 16, marginTop: 14, borderRadius: 20, padding: 18, borderWidth: 1 },
   leaderHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },

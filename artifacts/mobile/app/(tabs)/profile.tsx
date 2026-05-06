@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RecyclingSession, useAuth } from "@/context/AuthContext";
 import { BADGES, getLevelInfo } from "@/constants/gamification";
 import { useColors } from "@/hooks/useColors";
+import { RecyclingHeatmap } from "@/components/RecyclingHeatmap";
+import { ShareCard } from "@/components/ShareCard";
 
 function initials(name: string) {
   return name
@@ -107,13 +109,16 @@ function SessionItem({ session }: { session: RecyclingSession }) {
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, allUsers, logout } = useAuth();
+  const [showShare, setShowShare] = React.useState(false);
 
   if (!user) return null;
 
   const levelInfo = getLevelInfo(user.points);
   const activityPoints = Math.floor(user.points / 10);
   const earnedBadges = BADGES.filter((b) => user.badges.includes(b.id));
+  const sorted = [...allUsers].sort((a, b) => b.points - a.points);
+  const userRank = sorted.findIndex((u) => u.id === user.id) + 1;
 
   const handleLogout = async () => {
     await logout();
@@ -123,6 +128,7 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 + 16 : insets.top + 16;
 
   return (
+    <React.Fragment>
     <ScrollView
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={{
@@ -139,13 +145,22 @@ export default function ProfileScreen() {
           <View style={styles.avatarLg}>
             <Text style={styles.avatarText}>{initials(user.name)}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Feather name="log-out" size={18} color="rgba(255,255,255,0.8)" />
-          </TouchableOpacity>
+            <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => setShowShare(true)}
+              activeOpacity={0.7}
+            >
+              <Feather name="share-2" size={18} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <Feather name="log-out" size={18} color="rgba(255,255,255,0.8)" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={styles.userName}>{user.name}</Text>
@@ -275,7 +290,23 @@ export default function ProfileScreen() {
           </Text>
         </View>
       )}
+
+      <RecyclingHeatmap sessions={user.sessions} />
     </ScrollView>
+
+    <ShareCard
+      visible={showShare}
+      onClose={() => setShowShare(false)}
+      name={user.name}
+      usn={user.usn}
+      points={user.points}
+      rank={userRank}
+      streak={user.streak}
+      totalSessions={user.totalSessions}
+      carbonReduced={user.carbonReduced}
+      badges={user.badges}
+    />
+    </React.Fragment>
   );
 }
 
@@ -293,6 +324,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 16,
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 4 },
+  iconBtn: { padding: 8 },
   avatarLg: {
     width: 72,
     height: 72,
