@@ -14,8 +14,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
+import { FactCard } from "@/components/FactCard";
 import { useAuth, User } from "@/context/AuthContext";
-import { getDailyFact } from "@/constants/recyclingFacts";
 import {
   getLevelInfo,
   getMultiplier,
@@ -103,7 +103,6 @@ export default function HomeScreen() {
 
   const levelInfo = getLevelInfo(user.points);
   const activityPoints = Math.floor(user.points / 10);
-  const fact = getDailyFact();
   const sorted = [...allUsers].sort((a, b) => b.points - a.points);
   const top5 = sorted.slice(0, 5);
   const userRank = sorted.findIndex((u) => u.id === user.id) + 1;
@@ -248,13 +247,7 @@ export default function HomeScreen() {
       </TouchableOpacity>
 
       {/* Recycling Fact */}
-      <View style={[styles.factCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.factHeader}>
-          <Feather name="book-open" size={15} color={colors.accent} />
-          <Text style={[styles.factHeaderText, { color: colors.accent }]}>Today's Recycling Fact</Text>
-        </View>
-        <Text style={[styles.factText, { color: colors.foreground }]}>{fact}</Text>
-      </View>
+      <FactCard />
 
       {/* Top 5 Leaderboard */}
       <View style={[styles.leaderSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
