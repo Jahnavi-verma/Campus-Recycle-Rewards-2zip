@@ -24,6 +24,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "qrcode", selected: "qrcode" }} />
         <Label>Scan</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>Map</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profile</Label>
@@ -119,6 +123,18 @@ function ClassicTabLayout() {
               </View>
             ),
           tabBarActiveTintColor: colors.primary,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ color, size }) =>
+            isIOS ? (
+              <SymbolView name="map.fill" tintColor={color} size={size} />
+            ) : (
+              <Feather name="map" size={22} color={color} />
+            ),
         }}
       />
       <Tabs.Screen

@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import React from "react";
 import {
   Modal,
@@ -10,30 +11,34 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
 interface Step {
-  emoji: string;
+  iconName: React.ComponentProps<typeof Feather>["name"];
+  iconColor: string;
+  bgColor: string;
   title: string;
   description: string;
-  color: string;
 }
 
 const STEPS: Step[] = [
   {
-    emoji: "✊",
+    iconName: "minimize-2",
+    iconColor: "#43A047",
+    bgColor: "#E8F5E9",
     title: "Crush the Can",
-    description: "Flatten cans or crush bottles to save space inside the bin.",
-    color: "#E8F5E9",
+    description: "Flatten cans or squeeze bottles to save space inside the bin.",
   },
   {
-    emoji: "🫧",
+    iconName: "droplet",
+    iconColor: "#1E88E5",
+    bgColor: "#E3F2FD",
     title: "Shake Out Residue",
     description: "Give it a quick shake to remove any liquid or food residue.",
-    color: "#E3F2FD",
   },
   {
-    emoji: "♻️",
+    iconName: "refresh-cw",
+    iconColor: "#8E24AA",
+    bgColor: "#F3E5F5",
     title: "Place It Gently",
-    description: "Gently place the item inside the bin slot — don't throw!",
-    color: "#F3E5F5",
+    description: "Gently place the item inside the bin slot — do not throw!",
   },
 ];
 
@@ -48,9 +53,14 @@ export function RecyclingInstructionsModal({ visible, binType, onGotIt }: Props)
   const insets = useSafeAreaInsets();
 
   const binLabel =
-    binType === "can" ? "🥤 Cans Only" :
-    binType === "bottle" ? "💧 Bottles Only" :
-    "♻️ All Items";
+    binType === "can" ? "Cans Only" :
+    binType === "bottle" ? "Bottles Only" :
+    "All Items";
+
+  const binIcon: React.ComponentProps<typeof Feather>["name"] =
+    binType === "can" ? "box" :
+    binType === "bottle" ? "droplet" :
+    "refresh-cw";
 
   return (
     <Modal
@@ -72,6 +82,7 @@ export function RecyclingInstructionsModal({ visible, binType, onGotIt }: Props)
 
           {binType && binType !== "any" && (
             <View style={[styles.binTypePill, { backgroundColor: colors.secondary }]}>
+              <Feather name={binIcon} size={14} color={colors.primary} />
               <Text style={[styles.binTypeText, { color: colors.primary }]}>
                 This bin accepts: {binLabel}
               </Text>
@@ -82,15 +93,13 @@ export function RecyclingInstructionsModal({ visible, binType, onGotIt }: Props)
             {STEPS.map((step, idx) => (
               <View
                 key={idx}
-                style={[styles.stepCard, { backgroundColor: step.color }]}
+                style={[styles.stepCard, { backgroundColor: step.bgColor }]}
               >
-                <View style={styles.stepLeft}>
-                  <View style={[styles.stepNum, { backgroundColor: "rgba(0,0,0,0.08)" }]}>
-                    <Text style={styles.stepNumText}>{idx + 1}</Text>
-                  </View>
+                <View style={[styles.stepNumWrap, { backgroundColor: "rgba(0,0,0,0.08)" }]}>
+                  <Text style={styles.stepNumText}>{idx + 1}</Text>
                 </View>
-                <View style={styles.stepEmoji}>
-                  <Text style={styles.stepEmojiText}>{step.emoji}</Text>
+                <View style={[styles.stepIconWrap, { backgroundColor: "rgba(255,255,255,0.7)" }]}>
+                  <Feather name={step.iconName} size={22} color={step.iconColor} />
                 </View>
                 <View style={styles.stepContent}>
                   <Text style={styles.stepTitle}>{step.title}</Text>
@@ -101,7 +110,7 @@ export function RecyclingInstructionsModal({ visible, binType, onGotIt }: Props)
           </View>
 
           <View style={[styles.warningRow, { backgroundColor: "#FFF8E1", borderColor: "#FFE082" }]}>
-            <Text style={styles.warningIcon}>⚠️</Text>
+            <Feather name="alert-triangle" size={16} color="#FF8F00" />
             <Text style={styles.warningText}>
               Placing the wrong item type will result in a <Text style={styles.warningBold}>-10 point penalty</Text>.
             </Text>
@@ -112,7 +121,8 @@ export function RecyclingInstructionsModal({ visible, binType, onGotIt }: Props)
             onPress={onGotIt}
             activeOpacity={0.85}
           >
-            <Text style={styles.gotItText}>Got it — Let's Go! ♻️</Text>
+            <Feather name="check-circle" size={18} color="#FFFFFF" />
+            <Text style={styles.gotItText}>Got it — Let's Recycle!</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -152,6 +162,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   binTypePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     alignSelf: "flex-start",
     borderRadius: 20,
     paddingHorizontal: 14,
@@ -173,8 +186,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 12,
   },
-  stepLeft: { alignItems: "center" },
-  stepNum: {
+  stepNumWrap: {
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -186,15 +198,13 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_700Bold",
     color: "#333",
   },
-  stepEmoji: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.7)",
+  stepIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
   },
-  stepEmojiText: { fontSize: 22 },
   stepContent: { flex: 1 },
   stepTitle: {
     fontSize: 15,
@@ -217,7 +227,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 20,
   },
-  warningIcon: { fontSize: 18 },
   warningText: {
     flex: 1,
     fontSize: 13,
@@ -230,9 +239,12 @@ const styles = StyleSheet.create({
     color: "#E65100",
   },
   gotItBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     borderRadius: 16,
     paddingVertical: 17,
-    alignItems: "center",
   },
   gotItText: {
     color: "#FFFFFF",

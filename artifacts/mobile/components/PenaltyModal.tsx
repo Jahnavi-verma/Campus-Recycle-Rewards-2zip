@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -69,8 +70,8 @@ export function PenaltyModal({ visible, penaltyPoints, wrongItem, expectedItem, 
             },
           ]}
         >
-          <View style={styles.iconWrap}>
-            <Text style={styles.warningIcon}>⚠️</Text>
+          <View style={[styles.iconWrap, { backgroundColor: "#FEF2F2" }]}>
+            <Feather name="alert-triangle" size={38} color="#DC2626" />
           </View>
 
           <Text style={[styles.title, { color: "#DC2626" }]}>
@@ -87,16 +88,18 @@ export function PenaltyModal({ visible, penaltyPoints, wrongItem, expectedItem, 
             <Text style={[styles.bold, { color: "#DC2626" }]}>{wrongItem}</Text>.
           </Text>
 
-          <View style={styles.penaltyBox}>
-            <Text style={styles.penaltyEmoji}>💔</Text>
+          <View style={[styles.penaltyBox, { backgroundColor: "#FEF2F2" }]}>
+            <View style={[styles.penaltyIconWrap, { backgroundColor: "#FECACA" }]}>
+              <Feather name="minus-circle" size={28} color="#DC2626" />
+            </View>
             <View>
               <Text style={styles.penaltyPoints}>-{penaltyPoints} points</Text>
-              <Text style={styles.penaltyLabel}>deducted from your score</Text>
+              <Text style={[styles.penaltyLabel, { color: colors.mutedForeground }]}>deducted from your score</Text>
             </View>
           </View>
 
           <View style={[styles.tipBox, { backgroundColor: "#FFF8E1", borderColor: "#FFE082" }]}>
-            <Text style={styles.tipIcon}>💡</Text>
+            <Feather name="info" size={15} color="#FF8F00" />
             <Text style={styles.tipText}>
               Always check the bin label before recycling to avoid penalties.
             </Text>
@@ -131,14 +134,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#FEF2F2",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  warningIcon: { fontSize: 36 },
   title: {
     fontSize: 26,
     fontFamily: "Outfit_700Bold",
@@ -156,23 +157,27 @@ const styles = StyleSheet.create({
   penaltyBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    backgroundColor: "#FEF2F2",
+    gap: 16,
     borderRadius: 18,
-    paddingHorizontal: 24,
-    paddingVertical: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     width: "100%",
   },
-  penaltyEmoji: { fontSize: 28 },
+  penaltyIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   penaltyPoints: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: "Outfit_700Bold",
     color: "#DC2626",
   },
   penaltyLabel: {
     fontSize: 12,
     fontFamily: "Outfit_400Regular",
-    color: "#9CA3AF",
   },
   tipBox: {
     flexDirection: "row",
@@ -183,7 +188,6 @@ const styles = StyleSheet.create({
     padding: 14,
     width: "100%",
   },
-  tipIcon: { fontSize: 16, marginTop: 1 },
   tipText: {
     flex: 1,
     fontSize: 13,
