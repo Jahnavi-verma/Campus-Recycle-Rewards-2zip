@@ -1,28 +1,49 @@
 // mobile/services/api.ts
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
-// Update this to match your Spring Boot API server endpoint
-const BASE_URL = "https://campus-rewards-backend--jahnaviverma.replit.app/api";
+const TOKEN_KEY = "user_token";
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  // Points cleanly to your active Spring Boot backend instance
+  baseURL: "https://campus-rewards-backend--jahnaviverma.replit.app/api",
   headers: {
     "Content-Type": "application/json",
   },
-  // CRITICAL FOR PWA/WEB CORS: Allows cross-origin authentication requests to pass
-  withCredentials: true,
 });
 
-// Interceptor to automatically append the JWT token to every request header
+/**
+ * 🌟 NATIVE-SAFE INTERCEPTOR:
+ * Securely extracts local state variable markers across physical device runs
+ * without exposing raw web browser layout tokens.
+ */
 api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("user_token");
-      if (token && config.headers) {
+  async (config) => {
+    try {
+      let token: string | null = null;
+
+      if (Platform.OS === "web") {
+        token =
+          typeof window !== "undefined"
+            ? localStorage.getItem(TOKEN_KEY)
+            : null;
+      } else {
+        token = await AsyncStorage.getItem(TOKEN_KEY);
+      }
+
+      if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+    } catch (storageError) {
+      console.warn(
+        "Could not append authorization header tokens to request payload context:",
+        storageError,
+      );
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    return Promise.reject(error);
+  },
 );

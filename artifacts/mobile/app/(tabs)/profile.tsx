@@ -21,6 +21,7 @@ import { RecyclingHeatmap } from "@/components/RecyclingHeatmap";
 import { ShareCard } from "@/components/ShareCard";
 
 function initials(name: string) {
+  if (!name) return "?";
   return name
     .split(" ")
     .map((w) => w[0])
@@ -49,7 +50,9 @@ function StatCard({
       ]}
     >
       <Feather name={icon} size={20} color={accent ?? colors.primary} />
-      <Text style={[styles.statVal, { color: colors.foreground }]}>{value}</Text>
+      <Text style={[styles.statVal, { color: colors.foreground }]}>
+        {value}
+      </Text>
       <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
         {label}
       </Text>
@@ -59,6 +62,8 @@ function StatCard({
 
 function SessionItem({ session }: { session: RecyclingSession }) {
   const colors = useColors();
+  if (!session || !session.timestamp) return null;
+
   const date = new Date(session.timestamp);
   const dateStr = date.toLocaleDateString("en-IN", {
     day: "numeric",
@@ -77,7 +82,9 @@ function SessionItem({ session }: { session: RecyclingSession }) {
       <View
         style={[
           styles.sessionIcon,
-          { backgroundColor: session.itemType === "can" ? "#E8F5E9" : "#E0F2F1" },
+          {
+            backgroundColor: session.itemType === "can" ? "#E8F5E9" : "#E0F2F1",
+          },
         ]}
       >
         <Feather
@@ -88,8 +95,9 @@ function SessionItem({ session }: { session: RecyclingSession }) {
       </View>
       <View style={styles.sessionInfo}>
         <Text style={[styles.sessionType, { color: colors.foreground }]}>
-          {session.quantity}x {session.itemType === "can" ? "Can" : "Bottle"}
-          {session.quantity > 1 ? "s" : ""}
+          {session.quantity || 0}x{" "}
+          {session.itemType === "can" ? "Can" : "Bottle"}
+          {(session.quantity || 0) > 1 ? "s" : ""}
         </Text>
         <Text style={[styles.sessionDate, { color: colors.mutedForeground }]}>
           {dateStr}
@@ -97,9 +105,11 @@ function SessionItem({ session }: { session: RecyclingSession }) {
       </View>
       <View style={styles.sessionRight}>
         <Text style={[styles.sessionPts, { color: "#43A047" }]}>
-          +{session.pointsEarned}
+          +{session.pointsEarned || 0}
         </Text>
-        <Text style={[styles.sessionPtsLabel, { color: colors.mutedForeground }]}>
+        <Text
+          style={[styles.sessionPtsLabel, { color: colors.mutedForeground }]}
+        >
           pts
         </Text>
       </View>
@@ -115,10 +125,17 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
-  const levelInfo = getLevelInfo(user.points);
-  const activityPoints = Math.floor(user.points / 10);
-  const earnedBadges = BADGES.filter((b) => user.badges.includes(b.id));
-  const sorted = [...allUsers].sort((a, b) => b.points - a.points);
+  // 🛡️ CRASH GUARDS: Secure safe array structure fallbacks
+  const safeSessions = user.sessions || [];
+  const safeBadges = user.badges || [];
+  const safeAllUsers = allUsers || [];
+
+  const levelInfo = getLevelInfo(user.points || 0);
+  const activityPoints = Math.floor((user.points || 0) / 10);
+  const earnedBadges = BADGES.filter((b) => safeBadges.includes(b.id));
+  const sorted = [...safeAllUsers].sort(
+    (a, b) => (b.points || 0) - (a.points || 0),
+  );
   const userRank = sorted.findIndex((u) => u.id === user.id) + 1;
 
   const handleLogout = async () => {
@@ -130,263 +147,328 @@ export default function ProfileScreen() {
 
   return (
     <React.Fragment>
-    <ScrollView
-      style={[styles.root, { backgroundColor: colors.background }]}
-      contentContainerStyle={{
-        paddingBottom:
-          Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      <LinearGradient
-        colors={["#09090B", "#1E1B4B"]}
-        style={[styles.header, { paddingTop: topPad }]}
+      <ScrollView
+        style={[styles.root, { backgroundColor: colors.background }]}
+        contentContainerStyle={{
+          paddingBottom: Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
+        }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          {/* Avatar: Google profile picture or initials */}
-          {user.profilePicture ? (
-            <Image
-              source={{ uri: user.profilePicture }}
-              style={styles.avatarLgImg}
-              contentFit="cover"
-            />
-          ) : (
-            <View style={styles.avatarLg}>
-              <Text style={styles.avatarText}>{initials(user.name)}</Text>
-            </View>
-          )}
-
-          <View style={styles.headerActions}>
-            {user.isGoogleUser && (
-              <View style={styles.googleBadge}>
-                <Text style={styles.googleBadgeG}>G</Text>
+        <LinearGradient
+          colors={["#09090B", "#1E1B4B"]}
+          style={[styles.header, { paddingTop: topPad }]}
+        >
+          <View style={styles.headerRow}>
+            {/* Avatar: Google profile picture or initials */}
+            {user.profilePicture ? (
+              <Image
+                source={{ uri: user.profilePicture }}
+                style={styles.avatarLgImg}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.avatarLg}>
+                <Text style={styles.avatarText}>
+                  {initials(user.name || "Student")}
+                </Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => setShowShare(true)}
-              activeOpacity={0.7}
-            >
-              <Feather name="share-2" size={18} color="rgba(255,255,255,0.8)" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={handleLogout}
-              activeOpacity={0.7}
-            >
-              <Feather name="log-out" size={18} color="rgba(255,255,255,0.8)" />
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userMeta}>
-          {user.isGoogleUser ? "Google Account" : user.usn} · {user.email}
-        </Text>
-
-        {/* Level & Points */}
-        <View style={styles.pointsRow}>
-          <View style={styles.pointsBig}>
-            <Text style={styles.pointsValue}>{user.points.toLocaleString()}</Text>
-            <Text style={styles.pointsLabel}>points</Text>
+            <View style={styles.headerActions}>
+              {user.isGoogleUser && (
+                <View style={styles.googleBadge}>
+                  <Text style={styles.googleBadgeG}>G</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => setShowShare(true)}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name="share-2"
+                  size={18}
+                  color="rgba(255,255,255,0.8)"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.logoutBtn}
+                onPress={handleLogout}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name="log-out"
+                  size={18}
+                  color="rgba(255,255,255,0.8)"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={[styles.levelBadge, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
-            <Text style={styles.levelText}>
-              Lv.{levelInfo.level}
+
+          <Text style={styles.userName}>{user.name || "Eco Supporter"}</Text>
+          <Text style={styles.userMeta}>
+            {user.isGoogleUser ? "Google Account" : user.usn || "No USN Found"}{" "}
+            · {user.email}
+          </Text>
+
+          {/* Level & Points */}
+          <View style={styles.pointsRow}>
+            <View style={styles.pointsBig}>
+              <Text style={styles.pointsValue}>
+                {(user.points || 0).toLocaleString()}
+              </Text>
+              <Text style={styles.pointsLabel}>points</Text>
+            </View>
+            <View
+              style={[
+                styles.levelBadge,
+                { backgroundColor: "rgba(255,255,255,0.18)" },
+              ]}
+            >
+              <Text style={styles.levelText}>Lv.{levelInfo.level}</Text>
+            </View>
+            <View
+              style={[
+                styles.titleBadge,
+                { backgroundColor: "rgba(108,99,255,0.35)" },
+              ]}
+            >
+              <Text style={styles.titleText}>{levelInfo.title}</Text>
+            </View>
+            {(user.streak || 0) > 0 && (
+              <View
+                style={[
+                  styles.streakBadge,
+                  { backgroundColor: "rgba(255,165,0,0.25)" },
+                ]}
+              >
+                <Feather name="zap" size={13} color="#FFB300" />
+                <Text style={styles.streakText}>{user.streak}d</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${(levelInfo.progress || 0) * 100}%` },
+              ]}
+            />
+          </View>
+          <View style={styles.progressLabels}>
+            <Text style={styles.progressLabel}>Lv.{levelInfo.level}</Text>
+            <Text style={styles.progressLabel}>
+              {Math.max(
+                0,
+                levelInfo.nextLevelPoints - (user.points || 0),
+              ).toLocaleString()}{" "}
+              pts to Lv.{levelInfo.level + 1}
             </Text>
           </View>
-          <View style={[styles.titleBadge, { backgroundColor: "rgba(108,99,255,0.35)" }]}>
-            <Text style={styles.titleText}>{levelInfo.title}</Text>
-          </View>
-          {user.streak > 0 && (
-            <View style={[styles.streakBadge, { backgroundColor: "rgba(255,165,0,0.25)" }]}>
-              <Feather name="zap" size={13} color="#FFB300" />
-              <Text style={styles.streakText}>{user.streak}d</Text>
-            </View>
-          )}
-        </View>
+        </LinearGradient>
 
-        <View style={styles.progressBarBg}>
-          <View
-            style={[
-              styles.progressBarFill,
-              { width: `${levelInfo.progress * 100}%` },
-            ]}
+        <View style={styles.statsGrid}>
+          <StatCard
+            icon="star"
+            value={(user.points || 0).toLocaleString()}
+            label="Total Points"
+          />
+          <StatCard
+            icon="activity"
+            value={activityPoints.toLocaleString()}
+            label="Activity Points"
+            accent={colors.accent}
+          />
+          {/* 🌟 FIXED: Safe native fallback check added directly right here */}
+          <StatCard
+            icon="refresh-cw"
+            value={
+              user.totalSessions !== undefined && user.totalSessions !== null
+                ? user.totalSessions.toString()
+                : "0"
+            }
+            label="Sessions"
+          />
+          <StatCard
+            icon="wind"
+            value={`${(user.carbonReduced || 0).toFixed(2)} kg`}
+            label="CO2 Saved"
+            accent="#22C55E"
           />
         </View>
-        <View style={styles.progressLabels}>
-          <Text style={styles.progressLabel}>
-            Lv.{levelInfo.level}
-          </Text>
-          <Text style={styles.progressLabel}>
-            {(levelInfo.nextLevelPoints - user.points).toLocaleString()} pts to Lv.{levelInfo.level + 1}
-          </Text>
-        </View>
-      </LinearGradient>
 
-      <View style={styles.statsGrid}>
-        <StatCard
-          icon="star"
-          value={user.points.toLocaleString()}
-          label="Total Points"
-        />
-        <StatCard
-          icon="activity"
-          value={activityPoints.toLocaleString()}
-          label="Activity Points"
-          accent={colors.accent}
-        />
-        <StatCard
-          icon="refresh-cw"
-          value={user.totalSessions.toString()}
-          label="Sessions"
-        />
-        <StatCard
-          icon="wind"
-          value={`${user.carbonReduced.toFixed(2)} kg`}
-          label="CO2 Saved"
-          accent="#22C55E"
-        />
-      </View>
+        {/* Badges */}
+        {earnedBadges.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                Badges
+              </Text>
+              <Text
+                style={[styles.sectionCount, { color: colors.mutedForeground }]}
+              >
+                {earnedBadges.length}/{BADGES.length}
+              </Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.badgesRow}
+            >
+              {earnedBadges.map((badge) => (
+                <View
+                  key={badge.id}
+                  style={[
+                    styles.badgeCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.badgeIcon,
+                      { backgroundColor: badge.color + "22" },
+                    ]}
+                  >
+                    <Feather
+                      name={
+                        badge.icon as React.ComponentProps<
+                          typeof Feather
+                        >["name"]
+                      }
+                      size={20}
+                      color={badge.color}
+                    />
+                  </View>
+                  <Text
+                    style={[styles.badgeName, { color: colors.foreground }]}
+                    numberOfLines={1}
+                  >
+                    {badge.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.badgeDesc,
+                      { color: colors.mutedForeground },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {badge.description}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-      {/* Badges */}
-      {earnedBadges.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        {/* Locked badges preview */}
+        {earnedBadges.length < BADGES.length && (
+          <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-              Badges
+              Locked Achievements
             </Text>
-            <Text style={[styles.sectionCount, { color: colors.mutedForeground }]}>
-              {earnedBadges.length}/{BADGES.length}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.badgesRow}
+            >
+              {BADGES.filter((b) => !safeBadges.includes(b.id))
+                .slice(0, 5)
+                .map((badge) => (
+                  <View
+                    key={badge.id}
+                    style={[
+                      styles.badgeCard,
+                      styles.badgeCardLocked,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.badgeIcon,
+                        { backgroundColor: colors.secondary },
+                      ]}
+                    >
+                      <Feather
+                        name="lock"
+                        size={18}
+                        color={colors.mutedForeground}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.badgeName,
+                        { color: colors.mutedForeground },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {badge.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.badgeDesc,
+                        { color: colors.mutedForeground },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {badge.description}
+                    </Text>
+                  </View>
+                ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Recent Activity */}
+        {safeSessions.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              Recent Recycling
+            </Text>
+            {safeSessions.slice(0, 10).map((s) => (
+              <SessionItem
+                key={s?.id || Math.random().toString()}
+                session={s}
+              />
+            ))}
+          </View>
+        )}
+
+        {safeSessions.length === 0 && (
+          <View style={styles.emptyState}>
+            <Feather name="inbox" size={40} color={colors.mutedForeground} />
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+              No recycling sessions yet. Tap Scan to get started!
             </Text>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.badgesRow}
-          >
-            {earnedBadges.map((badge) => (
-              <View
-                key={badge.id}
-                style={[
-                  styles.badgeCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.badgeIcon,
-                    { backgroundColor: badge.color + "22" },
-                  ]}
-                >
-                  <Feather
-                    name={badge.icon as React.ComponentProps<typeof Feather>["name"]}
-                    size={20}
-                    color={badge.color}
-                  />
-                </View>
-                <Text
-                  style={[styles.badgeName, { color: colors.foreground }]}
-                  numberOfLines={1}
-                >
-                  {badge.name}
-                </Text>
-                <Text
-                  style={[
-                    styles.badgeDesc,
-                    { color: colors.mutedForeground },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {badge.description}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+        )}
 
-      {/* Locked badges preview */}
-      {earnedBadges.length < BADGES.length && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Locked Achievements
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.badgesRow}
-          >
-            {BADGES.filter((b) => !user.badges.includes(b.id)).slice(0, 5).map((badge) => (
-              <View
-                key={badge.id}
-                style={[
-                  styles.badgeCard,
-                  styles.badgeCardLocked,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <View style={[styles.badgeIcon, { backgroundColor: colors.secondary }]}>
-                  <Feather name="lock" size={18} color={colors.mutedForeground} />
-                </View>
-                <Text
-                  style={[styles.badgeName, { color: colors.mutedForeground }]}
-                  numberOfLines={1}
-                >
-                  {badge.name}
-                </Text>
-                <Text
-                  style={[styles.badgeDesc, { color: colors.mutedForeground }]}
-                  numberOfLines={2}
-                >
-                  {badge.description}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+        <RecyclingHeatmap sessions={safeSessions} />
+      </ScrollView>
 
-      {/* Recent Activity */}
-      {user.sessions.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Recent Recycling
-          </Text>
-          {user.sessions.slice(0, 10).map((s) => (
-            <SessionItem key={s.id} session={s} />
-          ))}
-        </View>
-      )}
-
-      {user.sessions.length === 0 && (
-        <View style={styles.emptyState}>
-          <Feather name="inbox" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            No recycling sessions yet. Tap Scan to get started!
-          </Text>
-        </View>
-      )}
-
-      <RecyclingHeatmap sessions={user.sessions} />
-    </ScrollView>
-
-    <ShareCard
-      visible={showShare}
-      onClose={() => setShowShare(false)}
-      name={user.name}
-      usn={user.usn}
-      points={user.points}
-      rank={userRank}
-      streak={user.streak}
-      totalSessions={user.totalSessions}
-      carbonReduced={user.carbonReduced}
-      badges={user.badges}
-    />
+      <ShareCard
+        visible={showShare}
+        onClose={() => setShowShare(false)}
+        name={user.name || "Student"}
+        usn={user.usn || "N/A"}
+        points={user.points || 0}
+        rank={userRank}
+        streak={user.streak || 0}
+        totalSessions={user.totalSessions || 0}
+        carbonReduced={user.carbonReduced || 0}
+        badges={safeBadges}
+      />
     </React.Fragment>
   );
 }
 
+// Stylesheet configurations remain untouched and valid
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
@@ -459,7 +541,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     marginBottom: 14,
   },
-  pointsBig: { flexDirection: "row", alignItems: "baseline", gap: 4, marginRight: 4 },
+  pointsBig: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+    marginRight: 4,
+  },
   pointsValue: {
     fontSize: 28,
     fontFamily: "Outfit_800ExtraBold",
