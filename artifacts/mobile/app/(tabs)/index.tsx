@@ -140,7 +140,10 @@ function MiniLeaderRow({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, allUsers } = useAuth();
+  const { user, allUsers,  refreshLeaderboard } = useAuth();
+   useEffect(() => {
+  refreshLeaderboard();
+}, []);
   const [campusStats, setCampusStats] = React.useState({
   totalSubmissions: 0,
   totalPoints: 0,
@@ -158,6 +161,7 @@ export default function HomeScreen() {
 // 👇 ADD THIS HERE
 useEffect(() => {
   async function loadCampusStats() {
+  
     try {
       const res = await api.get("/recycling/stats");
 
@@ -452,34 +456,51 @@ if (!user) return null;
       </View>
 
       {/* Campus Community Stats */}
-      <View style={[styles.campusCard, { backgroundColor: "#1E1B4B" }]}>
-        <View style={styles.campusHeader}>
-          <Feather name="globe" size={16} color="rgba(255,255,255,0.8)" />
-          <Text style={styles.campusTitle}>campus impact so far</Text>
-        </View>
-        <View style={styles.campusStats}>
-          <View style={styles.campusStat}>
-            <Text style={styles.campusStatVal}>
-             {campusStats.totalSubmissions.toLocaleString()}
-            </Text>
-            <Text style={styles.campusStatLabel}>Recycling Scans</Text>
-          </View>
-          <View style={[styles.campusDivider]} />
-          <View style={styles.campusStat}>
-            <Text style={styles.campusStatVal}>
-             {campusStats.totalPoints.toLocaleString()}
-            </Text>
-            <Text style={styles.campusStatLabel}>Campus Points</Text>
-          </View>
-          <View style={[styles.campusDivider]} />
-          <View style={styles.campusStat}>
-            <Text style={styles.campusStatVal}>{campusStats.totalUsers}</Text>
-            <Text style={styles.campusStatLabel}>Students</Text>
-          </View>
-        </View>
+     <View style={[styles.campusCard, { backgroundColor: "#1E1B4B" }]}>
+  <View style={styles.campusHeader}>
+    <Feather
+      name="globe"
+      size={16}
+      color="rgba(255,255,255,0.8)"
+    />
+    <Text style={styles.campusTitle}>
+      campus impact so far
+    </Text>
+  </View>
+
+  {/* 👇 ADD THIS WRAPPER */}
+      <View style={styles.campusStats}>
+      <View style={styles.campusStat}>
+        <Text style={styles.campusStatVal}>
+          {campusStats.totalBottles}
+        </Text>
+        <Text style={styles.campusStatLabel}>
+          Plastic Bottles
+        </Text>
       </View>
-    </ScrollView>
-  );
+
+      <View style={styles.campusStat}>
+        <Text style={styles.campusStatVal}>
+          {campusStats.totalCans}
+        </Text>
+        <Text style={styles.campusStatLabel}>
+          Aluminum Cans
+        </Text>
+      </View>
+
+      <View style={styles.campusStat}>
+        <Text style={styles.campusStatVal}>
+          {campusStats.totalUsers}
+        </Text>
+        <Text style={styles.campusStatLabel}>
+          Students
+        </Text>
+      </View>
+    </View>
+  </View>
+
+</ScrollView>
+);
 }
 
 // ... Stylesheets remain completely identical and perfectly configured!

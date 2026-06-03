@@ -2,9 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { api } from "@/services/api";
 import React from "react";
 import {
-  FlatList,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,7 +15,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RecyclingSession, useAuth } from "@/context/AuthContext";
-import { BADGES } from "@/constants/gamification";
 import { useColors } from "@/hooks/useColors";
 import { RecyclingHeatmap } from "@/components/RecyclingHeatmap";
 import { ShareCard } from "@/components/ShareCard";
@@ -122,16 +121,42 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, allUsers, logout } = useAuth();
   const [showShare, setShowShare] = React.useState(false);
+  const [backendBadges, setBackendBadges] = React.useState<any[]>([]);
 
-  if (!user) return null;
+React.useEffect(() => {
+  async function loadBadges() {
+    try {
+      const res =
+        await api.get("/users/me/badges");
+
+      console.log(
+        "BADGES RESPONSE",
+        res.data
+      );
+
+      setBackendBadges(
+        res.data || []
+      );
+    } catch (err) {
+      console.error(
+        "Failed loading badges",
+        err
+      );
+    }
+  }
+
+  loadBadges();
+}, []);
+
+if (!user) return null;
 
   // 🛡️ CRASH GUARDS: Secure safe array structure fallbacks
   const safeSessions = user.sessions || [];
-  const safeBadges = user.badges || [];
+
   const safeAllUsers = allUsers || [];
 
   const activityPoints = Math.floor((user.points || 0) / 10);
-  const earnedBadges = BADGES.filter((b) => safeBadges.includes(b.id));
+ 
   const sorted = [...safeAllUsers].sort(
     (a, b) => (b.points || 0) - (a.points || 0),
   );
@@ -255,7 +280,7 @@ export default function ProfileScreen() {
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${(user.levelProgressPercent || 0) * 100}%` },
+                { width: `${(user.levelProgressPercent || 0)}%` },
               ]}
             />
           </View>
@@ -303,24 +328,41 @@ export default function ProfileScreen() {
         </View>
 
         {/* Badges */}
-        {earnedBadges.length > 0 && (
+        {backendBadges.some(
+  (badge) => badge.unlocked
+) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
                 Badges
               </Text>
               <Text
-                style={[styles.sectionCount, { color: colors.mutedForeground }]}
-              >
-                {earnedBadges.length}/{BADGES.length}
-              </Text>
+  style={[
+    styles.sectionCount,
+    {
+      color:
+        colors.mutedForeground,
+    },
+  ]}
+>
+  {
+    backendBadges.filter(
+      (badge) =>
+        badge.unlocked
+    ).length
+  }
+  /
+  {backendBadges.length}
+</Text>
             </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.badgesRow}
             >
-              {earnedBadges.map((badge) => (
+             {backendBadges
+  .filter((badge) => badge.unlocked)
+  .map((badge) => (
                 <View
                   key={badge.id}
                   style={[
@@ -331,27 +373,30 @@ export default function ProfileScreen() {
                     },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.badgeIcon,
-                      { backgroundColor: badge.color + "22" },
-                    ]}
-                  >
+                 <View
+  style={[
+    styles.badgeIcon,
+    {
+      backgroundColor:
+        "#22C55E22",
+    },
+  ]}
+>
                     <Feather
-                      name={
-                        badge.icon as React.ComponentProps<
-                          typeof Feather
-                        >["name"]
-                      }
-                      size={20}
-                      color={badge.color}
-                    />
+  name={
+    (badge.icon as React.ComponentProps<
+      typeof Feather
+    >["name"]) || "award"
+  }
+  size={20}
+  color="#22C55E"
+/>
                   </View>
                   <Text
                     style={[styles.badgeName, { color: colors.foreground }]}
                     numberOfLines={1}
                   >
-                    {badge.name}
+                    {badge.title}
                   </Text>
                   <Text
                     style={[
@@ -369,7 +414,9 @@ export default function ProfileScreen() {
         )}
 
         {/* Locked badges preview */}
-        {earnedBadges.length < BADGES.length && (
+       {backendBadges.some(
+  (badge) => !badge.unlocked
+) && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
               Locked Achievements
@@ -379,7 +426,11 @@ export default function ProfileScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.badgesRow}
             >
-              {BADGES.filter((b) => !safeBadges.includes(b.id))
+              {backendBadges
+  .filter(
+    (badge) =>
+      !badge.unlocked
+  )
                 .slice(0, 5)
                 .map((badge) => (
                   <View
@@ -412,7 +463,7 @@ export default function ProfileScreen() {
                       ]}
                       numberOfLines={1}
                     >
-                      {badge.name}
+                      {badge.title}
                     </Text>
                     <Text
                       style={[
@@ -466,7 +517,11 @@ export default function ProfileScreen() {
         streak={user.streak || 0}
         totalSessions={user.totalSessions || 0}
         carbonReduced={user.carbonReduced || 0}
-        badges={safeBadges}
+        badges={
+  backendBadges
+    .filter((b) => b.unlocked)
+    .map((b) => b.id)
+}
       />
     </React.Fragment>
   );
