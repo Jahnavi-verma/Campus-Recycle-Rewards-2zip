@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   RefreshControl,
@@ -114,6 +115,21 @@ export default function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
   const { allUsers, user, refreshLeaderboard } = useAuth();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+
+  // Fetch on every mount — don't rely on AuthContext's useEffect which
+  // only fires when `user` changes and may have already fired before the
+  // user navigated to this tab.
+  React.useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      await refreshLeaderboard();
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const sorted = [...allUsers].sort((a, b) => b.points - a.points);
 
@@ -150,40 +166,45 @@ export default function LeaderboardScreen() {
         )}
       </LinearGradient>
 
-      <FlatList
-        data={sorted}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[
-          styles.list,
-          {
-            paddingBottom:
-              Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
-          },
-        ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              No data yet. Pull to refresh.
-            </Text>
-          </View>
-        }
-        renderItem={({ item, index }) => (
-          <LeaderboardRow
-            user={item}
-            rank={index + 1}
-            isCurrentUser={item.id === user?.id}
-          />
-        )}
-        scrollEnabled={sorted.length > 0}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={sorted}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[
+            styles.list,
+            {
+              paddingBottom:
+                Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
+            },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                No data yet. Pull to refresh.
+              </Text>
+            </View>
+          }
+          renderItem={({ item, index }) => (
+            <LeaderboardRow
+              user={item}
+              rank={index + 1}
+              isCurrentUser={item.id === user?.id}
+            />
+          )}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
@@ -222,6 +243,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13,
     fontFamily: "Outfit_600SemiBold",
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   list: { paddingTop: 16, paddingHorizontal: 16, gap: 10 },
   emptyState: {
