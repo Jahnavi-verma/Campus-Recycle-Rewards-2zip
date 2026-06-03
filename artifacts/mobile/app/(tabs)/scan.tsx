@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AchievementData, AchievementModal } from "@/components/AchievementModal";
 import { ConfettiOverlay } from "@/components/ConfettiOverlay";
+import { PenaltyModal } from "@/components/PenaltyModal";
+import { RecyclingInstructionsModal } from "@/components/RecyclingInstructionsModal";
 import { TriviaModal } from "@/components/TriviaModal";
 import { BADGES, getMultiplier, POINTS_PER_BOTTLE, POINTS_PER_CAN, CO2_PER_CAN, CO2_PER_BOTTLE } from "@/constants/gamification";
 import { getDailyTrivia, TriviaQuestion } from "@/constants/trivia";
@@ -31,7 +33,25 @@ import { useColors } from "@/hooks/useColors";
 import { playSuccessPing } from "@/utils/sound";
 
 type ItemType = "can" | "bottle";
-type FlowStep = "idle" | "scanned" | "success";
+type BinType = "can" | "bottle" | "any";
+type FlowStep = "idle" | "instructions" | "scanned" | "success" | "invalid";
+
+const PENALTY_POINTS = 10;
+
+function parseQRData(data: string): { valid: boolean; binType: BinType; binId: string } {
+  const parts = data.trim().split(":");
+  if (parts.length >= 3 && parts[0].toUpperCase() === "BINGO") {
+    const rawType = parts[1].toLowerCase();
+    const binId = parts[2];
+    if (rawType === "can" || rawType === "bottle" || rawType === "any") {
+      return { valid: true, binType: rawType as BinType, binId };
+    }
+  }
+  if (data.toUpperCase().startsWith("BINGO_BIN_CAN")) return { valid: true, binType: "can", binId: data };
+  if (data.toUpperCase().startsWith("BINGO_BIN_BOTTLE")) return { valid: true, binType: "bottle", binId: data };
+  if (data.toUpperCase().startsWith("BINGO_BIN")) return { valid: true, binType: "any", binId: data };
+  return { valid: false, binType: "any", binId: "" };
+}
 
 function ScanLine() {
   const translateY = useSharedValue(-80);
@@ -61,12 +81,14 @@ function ScanLine() {
 export default function ScanScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { addRecyclingSession, user } = useAuth();
+  const { addRecyclingSession, deductPoints, user } = useAuth();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [step, setStep] = useState<FlowStep>("idle");
   const [itemType, setItemType] = useState<ItemType>("can");
   const [quantity, setQuantity] = useState(1);
+  const [binType, setBinType] = useState<BinType>("any");
+  const [binId, setBinId] = useState("");
   const [sessionResult, setSessionResult] = useState<Awaited<ReturnType<typeof addRecyclingSession>> | null>(null);
   const [saving, setSaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -74,6 +96,7 @@ export default function ScanScreen() {
   const [achievementQueue, setAchievementQueue] = useState<AchievementData[]>([]);
   const [showTrivia, setShowTrivia] = useState(false);
   const [triviaQuestion] = useState<TriviaQuestion>(getDailyTrivia);
+  const [showPenalty, setShowPenalty] = useState(false);
   const scannedRef = useRef(false);
   const successScale = useRef(new Animated.Value(0)).current;
   const pointsBounce = useRef(new Animated.Value(0)).current;
@@ -84,20 +107,49 @@ export default function ScanScreen() {
   const co2Preview = itemType === "can" ? CO2_PER_CAN * quantity : CO2_PER_BOTTLE * quantity;
   const isCombo = quantity >= 5;
 
-  const handleBarCodeScanned = useCallback(() => {
+  const isWrongItem =
+    binType !== "any" &&
+    ((binType === "can" && itemType === "bottle") ||
+      (binType === "bottle" && itemType === "can"));
+
+  const handleBarCodeScanned = useCallback(({ data }: { data: string }) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep("scanned");
+
+    const parsed = parseQRData(data);
+    if (!parsed.valid) {
+      setStep("invalid");
+      return;
+    }
+
+    setBinType(parsed.binType);
+    setBinId(parsed.binId);
+    if (parsed.binType !== "any") {
+      setItemType(parsed.binType);
+    }
+    setStep("instructions");
   }, []);
 
   const handleStartManual = () => {
     scannedRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setBinType("any");
+    setBinId("MANUAL");
+    setStep("instructions");
+  };
+
+  const handleInstructionsDone = () => {
     setStep("scanned");
   };
 
   const handleConfirm = async () => {
+    if (isWrongItem) {
+      await deductPoints(PENALTY_POINTS);
+      setShowPenalty(true);
+      return;
+    }
+
     setSaving(true);
     const result = await addRecyclingSession(itemType, quantity);
     setSaving(false);
@@ -137,7 +189,6 @@ export default function ScanScreen() {
       setAchievementQueue(queue);
       setAchievement(queue[0]);
     } else {
-      // Show trivia after a short delay
       setTimeout(() => setShowTrivia(true), 1800);
     }
   };
@@ -158,11 +209,14 @@ export default function ScanScreen() {
     setStep("idle");
     setQuantity(1);
     setItemType("can");
+    setBinType("any");
+    setBinId("");
     setSessionResult(null);
     setShowConfetti(false);
     setAchievement(null);
     setAchievementQueue([]);
     setShowTrivia(false);
+    setShowPenalty(false);
     successScale.setValue(0);
     pointsBounce.setValue(0);
   };
@@ -213,7 +267,7 @@ export default function ScanScreen() {
             <CameraView
               style={StyleSheet.absoluteFillObject}
               facing="back"
-              barcodeScannerSettings={{ barcodeTypes: ["qr", "code128", "ean13", "upc_a"] }}
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
               onBarcodeScanned={handleBarCodeScanned}
             />
           ) : (
@@ -224,8 +278,8 @@ export default function ScanScreen() {
           )}
 
           <View style={[styles.overlay, { paddingTop: topPad + 20 }]}>
-            <Text style={styles.scanTitle}>Point at Bin QR Code</Text>
-            <Text style={styles.scanSub}>Scan the QR code on any campus recycling bin</Text>
+            <Text style={styles.scanTitle}>Scan Bin QR Code</Text>
+            <Text style={styles.scanSub}>Point your camera at the QR code on any campus recycling bin</Text>
           </View>
 
           <View style={styles.frameCont}>
@@ -236,6 +290,7 @@ export default function ScanScreen() {
               <View style={[styles.corner, styles.cornerBR]} />
               <ScanLine />
             </View>
+            <Text style={styles.qrHint}>QR codes only</Text>
           </View>
 
           <View style={[styles.bottomBar, { paddingBottom: Platform.OS === "web" ? 34 + 84 : insets.bottom + 100 }]}>
@@ -247,6 +302,29 @@ export default function ScanScreen() {
         </>
       )}
 
+      {/* ── INVALID QR ── */}
+      {step === "invalid" && (
+        <View style={[styles.logSheet, { backgroundColor: colors.background, paddingTop: topPad + 20, paddingBottom: insets.bottom + 24 }]}>
+          <View style={styles.logHandle} />
+          <View style={styles.invalidCenter}>
+            <View style={[styles.invalidIconBg, { backgroundColor: "#FEF2F2" }]}>
+              <Feather name="x-circle" size={44} color="#DC2626" />
+            </View>
+            <Text style={[styles.invalidTitle, { color: colors.foreground }]}>Invalid QR Code</Text>
+            <Text style={[styles.invalidBody, { color: colors.mutedForeground }]}>
+              This QR code is not from a binGO recycling bin. Please scan the QR code printed on the green recycling bins on campus.
+            </Text>
+            <TouchableOpacity
+              style={[styles.confirmBtn, { backgroundColor: colors.primary, marginTop: 24 }]}
+              onPress={handleReset}
+            >
+              <Feather name="refresh-cw" size={18} color="#FFFFFF" />
+              <Text style={styles.confirmBtnText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* ── SCANNED: LOG ITEMS ── */}
       {step === "scanned" && (
         <View style={[styles.logSheet, { backgroundColor: colors.background, paddingTop: topPad + 20, paddingBottom: insets.bottom + 24 }]}>
@@ -256,12 +334,14 @@ export default function ScanScreen() {
             <View style={[styles.successDot, { backgroundColor: "#43A047" }]}>
               <Feather name="check" size={18} color="#FFFFFF" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.logTitle, { color: colors.foreground }]}>
-                Bin Verified — Log Your Items
+                Bin Verified {binId !== "MANUAL" ? `· ${binId}` : ""}
               </Text>
               <Text style={[styles.logSub, { color: colors.mutedForeground }]}>
-                Choose what you're recycling
+                {binType !== "any"
+                  ? `This bin accepts ${binType === "can" ? "🥤 cans" : "💧 bottles"} only`
+                  : "Choose what you're recycling"}
               </Text>
             </View>
           </View>
@@ -269,26 +349,47 @@ export default function ScanScreen() {
           {/* Item type toggle */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Item Type</Text>
           <View style={[styles.toggleRow, { backgroundColor: colors.secondary }]}>
-            {(["can", "bottle"] as ItemType[]).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.toggleOpt, itemType === t && { backgroundColor: colors.primary }]}
-                onPress={() => { setItemType(t); Haptics.selectionAsync(); }}
-              >
-                <Feather
-                  name={t === "can" ? "box" : "droplet"}
-                  size={20}
-                  color={itemType === t ? "#FFFFFF" : colors.mutedForeground}
-                />
-                <Text style={[styles.toggleText, { color: itemType === t ? "#FFFFFF" : colors.mutedForeground }]}>
-                  {t === "can" ? "Can" : "Bottle"}
-                </Text>
-                <Text style={[styles.togglePts, { color: itemType === t ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
-                  {t === "can" ? POINTS_PER_CAN : POINTS_PER_BOTTLE} base pts
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {(["can", "bottle"] as ItemType[]).map((t) => {
+              const isSelected = itemType === t;
+              const isWrong = binType !== "any" && binType !== t && isSelected;
+              return (
+                <TouchableOpacity
+                  key={t}
+                  style={[
+                    styles.toggleOpt,
+                    isSelected && { backgroundColor: isWrong ? "#DC2626" : colors.primary },
+                  ]}
+                  onPress={() => { setItemType(t); Haptics.selectionAsync(); }}
+                >
+                  <Feather
+                    name={t === "can" ? "box" : "droplet"}
+                    size={20}
+                    color={isSelected ? "#FFFFFF" : colors.mutedForeground}
+                  />
+                  <Text style={[styles.toggleText, { color: isSelected ? "#FFFFFF" : colors.mutedForeground }]}>
+                    {t === "can" ? "Can" : "Bottle"}
+                  </Text>
+                  <Text style={[styles.togglePts, { color: isSelected ? "rgba(255,255,255,0.75)" : colors.mutedForeground }]}>
+                    {t === "can" ? POINTS_PER_CAN : POINTS_PER_BOTTLE} base pts
+                  </Text>
+                  {binType !== "any" && binType !== t && (
+                    <View style={styles.wrongBadge}>
+                      <Text style={styles.wrongBadgeText}>✗ wrong</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
+
+          {isWrongItem && (
+            <View style={[styles.penaltyWarn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-triangle" size={14} color="#DC2626" />
+              <Text style={styles.penaltyWarnText}>
+                Wrong item! Confirming will deduct <Text style={{ fontFamily: "Outfit_700Bold" }}>-{PENALTY_POINTS} points</Text>.
+              </Text>
+            </View>
+          )}
 
           {/* Quantity */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Quantity</Text>
@@ -316,7 +417,7 @@ export default function ScanScreen() {
           </View>
 
           {/* Multiplier breakdown */}
-          {multiplierInfo.breakdown.length > 0 && (
+          {multiplierInfo.breakdown.length > 0 && !isWrongItem && (
             <View style={[styles.multiplierBox, { backgroundColor: "#FFF8E1", borderColor: "#FFE082" }]}>
               <View style={styles.multiplierHeader}>
                 <Feather name="zap" size={14} color="#FF8F00" />
@@ -334,33 +435,37 @@ export default function ScanScreen() {
           )}
 
           {/* Preview card */}
-          <LinearGradient colors={["#E8F5E9", "#C8E6C9"]} style={styles.previewCard}>
-            <View style={styles.previewRow}>
-              <View style={styles.previewItem}>
-                <Text style={[styles.previewVal, { color: colors.primary }]}>+{previewPoints}</Text>
-                {multiplierInfo.total > 1 && (
-                  <Text style={[styles.previewBase, { color: colors.mutedForeground }]}>
-                    base {basePoints}
-                  </Text>
-                )}
-                <Text style={[styles.previewLabel, { color: colors.mutedForeground }]}>Points</Text>
+          {!isWrongItem && (
+            <LinearGradient colors={["#E8F5E9", "#C8E6C9"]} style={styles.previewCard}>
+              <View style={styles.previewRow}>
+                <View style={styles.previewItem}>
+                  <Text style={[styles.previewVal, { color: colors.primary }]}>+{previewPoints}</Text>
+                  {multiplierInfo.total > 1 && (
+                    <Text style={[styles.previewBase, { color: colors.mutedForeground }]}>
+                      base {basePoints}
+                    </Text>
+                  )}
+                  <Text style={[styles.previewLabel, { color: colors.mutedForeground }]}>Points</Text>
+                </View>
+                <View style={[styles.previewDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.previewItem}>
+                  <Text style={[styles.previewVal, { color: colors.accent }]}>{co2Preview.toFixed(2)} kg</Text>
+                  <Text style={[styles.previewLabel, { color: colors.mutedForeground }]}>CO2 Saved</Text>
+                </View>
               </View>
-              <View style={[styles.previewDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.previewItem}>
-                <Text style={[styles.previewVal, { color: colors.accent }]}>{co2Preview.toFixed(2)} kg</Text>
-                <Text style={[styles.previewLabel, { color: colors.mutedForeground }]}>CO2 Saved</Text>
-              </View>
-            </View>
-          </LinearGradient>
+            </LinearGradient>
+          )}
 
           <TouchableOpacity
-            style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
+            style={[styles.confirmBtn, { backgroundColor: isWrongItem ? "#DC2626" : colors.primary }]}
             onPress={handleConfirm}
             activeOpacity={0.85}
             disabled={saving}
           >
-            <Feather name="check-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.confirmBtnText}>{saving ? "Saving…" : "Confirm Session"}</Text>
+            <Feather name={isWrongItem ? "alert-triangle" : "check-circle"} size={20} color="#FFFFFF" />
+            <Text style={styles.confirmBtnText}>
+              {saving ? "Saving…" : isWrongItem ? `Confirm Anyway (-${PENALTY_POINTS} pts)` : "Confirm Session"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleReset} style={styles.cancelBtn}>
@@ -414,6 +519,15 @@ export default function ScanScreen() {
             </View>
           )}
 
+          {sessionResult.leveledUp && (
+            <View style={[styles.challengeToast, { backgroundColor: "#6C63FF", marginTop: 8 }]}>
+              <Feather name="trending-up" size={16} color="#FFFFFF" />
+              <Text style={styles.challengeToastText}>
+                Level Up! You're now Lv.{sessionResult.newLevel} — {sessionResult.newTitle}
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[styles.doneBtn, { backgroundColor: colors.primary }]}
             onPress={handleReset}
@@ -423,6 +537,20 @@ export default function ScanScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <RecyclingInstructionsModal
+        visible={step === "instructions"}
+        binType={binType}
+        onGotIt={handleInstructionsDone}
+      />
+
+      <PenaltyModal
+        visible={showPenalty}
+        penaltyPoints={PENALTY_POINTS}
+        wrongItem={itemType}
+        expectedItem={binType === "can" ? "can" : "bottle"}
+        onClose={handleReset}
+      />
 
       <AchievementModal
         visible={!!achievement}
@@ -457,7 +585,7 @@ const styles = StyleSheet.create({
     fontSize: 14, fontFamily: "Outfit_400Regular",
     color: "rgba(255,255,255,0.8)", textAlign: "center",
   },
-  frameCont: { flex: 1, alignItems: "center", justifyContent: "center" },
+  frameCont: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   frameOuter: { width: FRAME, height: FRAME, position: "relative", overflow: "hidden" },
   corner: { position: "absolute", width: CORNER, height: CORNER, borderColor: "#FFFFFF" },
   cornerTL: { top: 0, left: 0, borderTopWidth: CW, borderLeftWidth: CW, borderTopLeftRadius: 4 },
@@ -466,6 +594,10 @@ const styles = StyleSheet.create({
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: CW, borderRightWidth: CW, borderBottomRightRadius: 4 },
   scanLine: { position: "absolute", left: 8, right: 8, alignItems: "center" },
   scanLineInner: { height: 2, width: "100%", backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 1 },
+  qrHint: {
+    color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "Outfit_400Regular",
+    letterSpacing: 0.5,
+  },
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
     alignItems: "center", paddingTop: 24,
@@ -479,6 +611,21 @@ const styles = StyleSheet.create({
   manualBtnText: { color: "#FFFFFF", fontSize: 15, fontFamily: "Outfit_600SemiBold" },
   webCamPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#111111", gap: 12 },
   webCamText: { color: "rgba(255,255,255,0.35)", fontSize: 14, fontFamily: "Outfit_400Regular" },
+  permText: { fontSize: 14, fontFamily: "Outfit_400Regular" },
+  permCard: {
+    borderRadius: 24, padding: 28, alignItems: "center", gap: 16, borderWidth: 1,
+    width: "100%",
+  },
+  permIconBg: {
+    width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center",
+  },
+  permTitle: { fontSize: 20, fontFamily: "Outfit_700Bold", textAlign: "center" },
+  permBody: { fontSize: 14, fontFamily: "Outfit_400Regular", textAlign: "center", lineHeight: 22 },
+  permBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14,
+  },
+  permBtnText: { color: "#FFFFFF", fontSize: 15, fontFamily: "Outfit_700Bold" },
   logSheet: { flex: 1, paddingHorizontal: 22 },
   logHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", alignSelf: "center", marginBottom: 24 },
   logHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
@@ -489,10 +636,21 @@ const styles = StyleSheet.create({
     fontSize: 11, fontFamily: "Outfit_600SemiBold",
     letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10,
   },
-  toggleRow: { flexDirection: "row", borderRadius: 16, padding: 6, marginBottom: 20, gap: 6 },
+  toggleRow: { flexDirection: "row", borderRadius: 16, padding: 6, marginBottom: 12, gap: 6 },
   toggleOpt: { flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 12, gap: 4 },
   toggleText: { fontSize: 15, fontFamily: "Outfit_700Bold" },
   togglePts: { fontSize: 10, fontFamily: "Outfit_400Regular" },
+  wrongBadge: {
+    borderRadius: 6, backgroundColor: "rgba(220,38,38,0.15)", paddingHorizontal: 6, paddingVertical: 2,
+  },
+  wrongBadgeText: { fontSize: 9, fontFamily: "Outfit_700Bold", color: "#DC2626" },
+  penaltyWarn: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 12,
+  },
+  penaltyWarnText: {
+    flex: 1, fontSize: 13, fontFamily: "Outfit_400Regular", color: "#DC2626",
+  },
   quantityRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     borderRadius: 16, padding: 8, marginBottom: 16, borderWidth: 1,
@@ -502,12 +660,8 @@ const styles = StyleSheet.create({
   qtyVal: { fontSize: 32, fontFamily: "Outfit_700Bold", minWidth: 60, textAlign: "center" },
   comboBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
   comboText: { color: "#FFFFFF", fontSize: 11, fontFamily: "Outfit_700Bold", letterSpacing: 1 },
-  multiplierBox: {
-    borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1.5,
-  },
-  multiplierHeader: {
-    flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8,
-  },
+  multiplierBox: { borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1.5 },
+  multiplierHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
   multiplierTitle: { flex: 1, fontSize: 13, fontFamily: "Outfit_700Bold", color: "#FF8F00" },
   multiplierTotal: { fontSize: 18, fontFamily: "Outfit_700Bold", color: "#FF6D00" },
   multiplierRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
@@ -528,35 +682,37 @@ const styles = StyleSheet.create({
   confirmBtnText: { color: "#FFFFFF", fontSize: 16, fontFamily: "Outfit_700Bold" },
   cancelBtn: { alignItems: "center", paddingVertical: 12 },
   cancelText: { fontSize: 15, fontFamily: "Outfit_500Medium" },
+  invalidCenter: {
+    flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
+  },
+  invalidIconBg: {
+    width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center",
+    marginBottom: 20,
+  },
+  invalidTitle: { fontSize: 22, fontFamily: "Outfit_700Bold", marginBottom: 12 },
+  invalidBody: {
+    fontSize: 14, fontFamily: "Outfit_400Regular", textAlign: "center", lineHeight: 22,
+  },
   successScreen: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 },
   successBubble: { marginBottom: 28 },
   successCircle: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center" },
   successTitle: { fontSize: 28, fontFamily: "Outfit_700Bold", marginBottom: 6 },
-  successSub: { fontSize: 15, fontFamily: "Outfit_400Regular", marginBottom: 32, textAlign: "center" },
-  rewardRow: { flexDirection: "row", gap: 16, width: "100%", marginBottom: 20 },
-  rewardCard: { flex: 1, borderRadius: 20, padding: 20, alignItems: "center", gap: 4 },
-  rewardVal: { fontSize: 22, fontFamily: "Outfit_700Bold" },
+  successSub: { fontSize: 15, fontFamily: "Outfit_400Regular", marginBottom: 28, textAlign: "center" },
+  rewardRow: { flexDirection: "row", gap: 14, marginBottom: 20, width: "100%" },
+  rewardCard: {
+    flex: 1, borderRadius: 20, padding: 18, alignItems: "center", gap: 6,
+  },
+  rewardVal: { fontSize: 24, fontFamily: "Outfit_700Bold" },
   rewardMult: { fontSize: 12, fontFamily: "Outfit_600SemiBold" },
-  rewardLabel: { fontSize: 12, fontFamily: "Outfit_400Regular", textAlign: "center" },
+  rewardLabel: { fontSize: 12, fontFamily: "Outfit_400Regular" },
   challengeToast: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    borderRadius: 16, paddingHorizontal: 18, paddingVertical: 12,
-    marginBottom: 20, width: "100%",
+    borderRadius: 14, paddingHorizontal: 18, paddingVertical: 12, width: "100%",
   },
   challengeToastText: { color: "#FFFFFF", fontSize: 13, fontFamily: "Outfit_600SemiBold", flex: 1 },
   doneBtn: {
-    borderRadius: 16, paddingVertical: 18, paddingHorizontal: 48,
-    alignItems: "center", minWidth: 200,
+    borderRadius: 16, paddingVertical: 17, paddingHorizontal: 48,
+    alignItems: "center", marginTop: 24,
   },
   doneBtnText: { color: "#FFFFFF", fontSize: 16, fontFamily: "Outfit_700Bold" },
-  permCard: { borderRadius: 24, padding: 32, alignItems: "center", gap: 16, borderWidth: 1, maxWidth: 320 },
-  permIconBg: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
-  permTitle: { fontSize: 20, fontFamily: "Outfit_700Bold", textAlign: "center" },
-  permBody: { fontSize: 14, fontFamily: "Outfit_400Regular", textAlign: "center", lineHeight: 22 },
-  permText: { fontSize: 14, fontFamily: "Outfit_400Regular" },
-  permBtn: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    borderRadius: 14, paddingVertical: 14, paddingHorizontal: 24, marginTop: 4,
-  },
-  permBtnText: { color: "#FFFFFF", fontSize: 15, fontFamily: "Outfit_700Bold" },
 });

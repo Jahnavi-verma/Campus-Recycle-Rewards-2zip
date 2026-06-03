@@ -18,16 +18,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
+const MOCK_GOOGLE_PROFILES = [
+  { name: "Alex Johnson", email: "alex.j@gmail.com" },
+  { name: "Sam Rivera", email: "sam.r@gmail.com" },
+  { name: "Jordan Lee", email: "jordan.l@gmail.com" },
+];
+
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password) {
@@ -45,9 +52,24 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError("");
+    setGoogleLoading(true);
+    await new Promise((r) => setTimeout(r, 1600));
+    const profile = MOCK_GOOGLE_PROFILES[Math.floor(Math.random() * MOCK_GOOGLE_PROFILES.length)];
+    const nameParts = profile.name.split(" ");
+    const picUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameParts.join("+"))}&background=6C63FF&color=fff&size=128&bold=true`;
+    const result = await googleLogin(profile.name, profile.email, picUrl);
+    setGoogleLoading(false);
+    if (result.success) {
+      router.replace("/(tabs)");
+    } else {
+      setError(result.error ?? "Google sign-in failed.");
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <LinearGradient
         colors={["#09090B", "#1E1B4B"]}
         style={[styles.header, { paddingTop: insets.top + 28 }]}
@@ -81,6 +103,33 @@ export default function LoginScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
+
+          {/* Google Sign-In Button */}
+          <TouchableOpacity
+            style={[styles.googleBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={handleGoogleLogin}
+            activeOpacity={0.85}
+            disabled={googleLoading || loading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color="#4285F4" />
+            ) : (
+              <>
+                <View style={styles.googleIconWrap}>
+                  <Text style={styles.googleG}>G</Text>
+                </View>
+                <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
+                  Continue with Google
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>or sign in with email</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
 
           <Text style={[styles.label, { color: colors.mutedForeground }]}>USN or email</Text>
           <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.input }]}>
@@ -116,7 +165,7 @@ export default function LoginScreen() {
             style={[styles.submitBtn, { backgroundColor: colors.primary }]}
             onPress={handleLogin}
             activeOpacity={0.85}
-            disabled={loading}
+            disabled={loading || googleLoading}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -196,6 +245,43 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_400Regular",
     flex: 1,
   },
+  googleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    minHeight: 56,
+  },
+  googleIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleG: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+  },
+  googleBtnText: {
+    fontSize: 15,
+    fontFamily: "Outfit_600SemiBold",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, fontFamily: "Outfit_400Regular" },
   label: {
     fontSize: 12,
     fontFamily: "Outfit_600SemiBold",

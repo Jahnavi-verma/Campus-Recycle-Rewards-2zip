@@ -34,6 +34,8 @@ export interface User {
   email: string;
   usn: string;
   passwordHash: string;
+  profilePicture?: string;
+  isGoogleUser?: boolean;
   points: number;
   totalSessions: number;
   carbonReduced: number;
@@ -67,6 +69,11 @@ interface AuthContextType {
     identifier: string,
     password: string
   ) => Promise<{ success: boolean; error?: string }>;
+  googleLogin: (
+    name: string,
+    email: string,
+    profilePicture?: string
+  ) => Promise<{ success: boolean; error?: string }>;
   signup: (
     name: string,
     email: string,
@@ -78,6 +85,7 @@ interface AuthContextType {
     itemType: "can" | "bottle",
     quantity: number
   ) => Promise<SessionResult>;
+  deductPoints: (amount: number) => Promise<void>;
   refreshLeaderboard: () => Promise<void>;
 }
 
@@ -365,6 +373,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  const googleLogin = async (
+    name: string,
+    email: string,
+    profilePicture?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const emailLower = email.toLowerCase().trim();
+    const users = await loadUsers();
+
+    const existing = users.find((u) => u.email.toLowerCase() === emailLower);
+    if (existing) {
+      const updated = { ...existing, profilePicture, isGoogleUser: true };
+      const updatedUsers = users.map((u) => u.id === existing.id ? updated : u);
+      await saveUsers(updatedUsers);
+      await AsyncStorage.setItem(KEYS.CURRENT_USER_ID, existing.id);
+      setUser(updated);
+      return { success: true };
+    }
+
+    const nameParts = name.trim().split(" ");
+    const autoUsn = "GOOGLE_" + Date.now().toString().slice(-6);
+    const newUser: User = {
+      id: "g_" + Date.now().toString() + Math.random().toString(36).slice(2, 9),
+      name: name.trim(),
+      email: emailLower,
+      usn: autoUsn,
+      passwordHash: "",
+      profilePicture: profilePicture ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(nameParts.join("+"))}&background=6C63FF&color=fff&size=128`,
+      isGoogleUser: true,
+      points: 0,
+      totalSessions: 0,
+      carbonReduced: 0,
+      streak: 0,
+      lastSessionDate: null,
+      badges: [],
+      joinedAt: new Date().toISOString().split("T")[0],
+      sessions: [],
+    };
+
+    const updated = [...users, newUser];
+    await saveUsers(updated);
+    await AsyncStorage.setItem(KEYS.CURRENT_USER_ID, newUser.id);
+    setUser(newUser);
+    return { success: true };
+  };
+
   const signup = async (
     name: string,
     email: string,
@@ -468,7 +521,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const newLevelInfo = getLevelInfo(updatedUser.points);
     const leveledUp = newLevelInfo.level > prevLevel;
 
-    // Daily challenge check
     const challenge = getTodaysChallenge();
     const today = new Date().toISOString().split("T")[0];
     const todaySessions = updatedUser.sessions.filter(
@@ -522,6 +574,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const deductPoints = async (amount: number): Promise<void> => {
+    if (!user) return;
+    const newPoints = Math.max(0, user.points - amount);
+    const updatedUser: User = { ...user, points: newPoints };
+    const users = await loadUsers();
+    const updated = users.map((u) => (u.id === user.id ? updatedUser : u));
+    await saveUsers(updated);
+    setUser(updatedUser);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  };
+
   const refreshLeaderboard = async () => {
     const users = await loadUsers();
     setAllUsers(users);
@@ -536,9 +599,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         completeOnboarding,
         login,
+        googleLogin,
         signup,
         logout,
         addRecyclingSession,
+        deductPoints,
         refreshLeaderboard,
       }}
     >

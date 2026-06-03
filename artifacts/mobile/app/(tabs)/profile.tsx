@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -82,7 +83,7 @@ function SessionItem({ session }: { session: RecyclingSession }) {
         <Feather
           name={session.itemType === "can" ? "box" : "droplet"}
           size={18}
-          color={session.itemType === "can" ? colors.primary : colors.accent}
+          color={session.itemType === "can" ? "#43A047" : "#00ACC1"}
         />
       </View>
       <View style={styles.sessionInfo}>
@@ -95,7 +96,7 @@ function SessionItem({ session }: { session: RecyclingSession }) {
         </Text>
       </View>
       <View style={styles.sessionRight}>
-        <Text style={[styles.sessionPts, { color: colors.primary }]}>
+        <Text style={[styles.sessionPts, { color: "#43A047" }]}>
           +{session.pointsEarned}
         </Text>
         <Text style={[styles.sessionPtsLabel, { color: colors.mutedForeground }]}>
@@ -142,10 +143,25 @@ export default function ProfileScreen() {
         style={[styles.header, { paddingTop: topPad }]}
       >
         <View style={styles.headerRow}>
-          <View style={styles.avatarLg}>
-            <Text style={styles.avatarText}>{initials(user.name)}</Text>
-          </View>
-            <View style={styles.headerActions}>
+          {/* Avatar: Google profile picture or initials */}
+          {user.profilePicture ? (
+            <Image
+              source={{ uri: user.profilePicture }}
+              style={styles.avatarLgImg}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.avatarLg}>
+              <Text style={styles.avatarText}>{initials(user.name)}</Text>
+            </View>
+          )}
+
+          <View style={styles.headerActions}>
+            {user.isGoogleUser && (
+              <View style={styles.googleBadge}>
+                <Text style={styles.googleBadgeG}>G</Text>
+              </View>
+            )}
             <TouchableOpacity
               style={styles.iconBtn}
               onPress={() => setShowShare(true)}
@@ -165,19 +181,27 @@ export default function ProfileScreen() {
 
         <Text style={styles.userName}>{user.name}</Text>
         <Text style={styles.userMeta}>
-          {user.usn} · {user.email}
+          {user.isGoogleUser ? "Google Account" : user.usn} · {user.email}
         </Text>
 
-        <View style={styles.levelRow}>
+        {/* Level & Points */}
+        <View style={styles.pointsRow}>
+          <View style={styles.pointsBig}>
+            <Text style={styles.pointsValue}>{user.points.toLocaleString()}</Text>
+            <Text style={styles.pointsLabel}>points</Text>
+          </View>
           <View style={[styles.levelBadge, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
             <Text style={styles.levelText}>
-              Lv.{levelInfo.level} · {levelInfo.title}
+              Lv.{levelInfo.level}
             </Text>
+          </View>
+          <View style={[styles.titleBadge, { backgroundColor: "rgba(108,99,255,0.35)" }]}>
+            <Text style={styles.titleText}>{levelInfo.title}</Text>
           </View>
           {user.streak > 0 && (
             <View style={[styles.streakBadge, { backgroundColor: "rgba(255,165,0,0.25)" }]}>
               <Feather name="zap" size={13} color="#FFB300" />
-              <Text style={styles.streakText}>{user.streak} day streak</Text>
+              <Text style={styles.streakText}>{user.streak}d</Text>
             </View>
           )}
         </View>
@@ -190,9 +214,14 @@ export default function ProfileScreen() {
             ]}
           />
         </View>
-        <Text style={styles.progressLabel}>
-          {(levelInfo.nextLevelPoints - user.points).toLocaleString()} pts to next level
-        </Text>
+        <View style={styles.progressLabels}>
+          <Text style={styles.progressLabel}>
+            Lv.{levelInfo.level}
+          </Text>
+          <Text style={styles.progressLabel}>
+            {(levelInfo.nextLevelPoints - user.points).toLocaleString()} pts to Lv.{levelInfo.level + 1}
+          </Text>
+        </View>
       </LinearGradient>
 
       <View style={styles.statsGrid}>
@@ -216,15 +245,21 @@ export default function ProfileScreen() {
           icon="wind"
           value={`${user.carbonReduced.toFixed(2)} kg`}
           label="CO2 Saved"
-          accent={colors.eco ?? "#22C55E"}
+          accent="#22C55E"
         />
       </View>
 
+      {/* Badges */}
       {earnedBadges.length > 0 && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Badges
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              Badges
+            </Text>
+            <Text style={[styles.sectionCount, { color: colors.mutedForeground }]}>
+              {earnedBadges.length}/{BADGES.length}
+            </Text>
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -241,13 +276,13 @@ export default function ProfileScreen() {
                 <View
                   style={[
                     styles.badgeIcon,
-                    { backgroundColor: colors.secondary },
+                    { backgroundColor: badge.color + "22" },
                   ]}
                 >
                   <Feather
                     name={badge.icon as React.ComponentProps<typeof Feather>["name"]}
                     size={20}
-                    color={colors.primary}
+                    color={badge.color}
                   />
                 </View>
                 <Text
@@ -271,10 +306,52 @@ export default function ProfileScreen() {
         </View>
       )}
 
+      {/* Locked badges preview */}
+      {earnedBadges.length < BADGES.length && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Locked Achievements
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.badgesRow}
+          >
+            {BADGES.filter((b) => !user.badges.includes(b.id)).slice(0, 5).map((badge) => (
+              <View
+                key={badge.id}
+                style={[
+                  styles.badgeCard,
+                  styles.badgeCardLocked,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <View style={[styles.badgeIcon, { backgroundColor: colors.secondary }]}>
+                  <Feather name="lock" size={18} color={colors.mutedForeground} />
+                </View>
+                <Text
+                  style={[styles.badgeName, { color: colors.mutedForeground }]}
+                  numberOfLines={1}
+                >
+                  {badge.name}
+                </Text>
+                <Text
+                  style={[styles.badgeDesc, { color: colors.mutedForeground }]}
+                  numberOfLines={2}
+                >
+                  {badge.description}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Recent Activity */}
       {user.sessions.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Recent Activity
+            Recent Recycling
           </Text>
           {user.sessions.slice(0, 10).map((s) => (
             <SessionItem key={s.id} session={s} />
@@ -336,14 +413,33 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.4)",
   },
+  avatarLgImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.4)",
+  },
   avatarText: {
     fontSize: 26,
     fontFamily: "Outfit_700Bold",
     color: "#FFFFFF",
   },
-  logoutBtn: {
-    padding: 8,
+  googleBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 4,
   },
+  googleBadgeG: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Outfit_700Bold",
+  },
+  logoutBtn: { padding: 8 },
   userName: {
     fontSize: 24,
     fontFamily: "Outfit_700Bold",
@@ -354,19 +450,42 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_400Regular",
     color: "rgba(255,255,255,0.7)",
     marginTop: 2,
-    marginBottom: 16,
-  },
-  levelRow: {
-    flexDirection: "row",
-    gap: 8,
     marginBottom: 14,
+  },
+  pointsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 14,
+  },
+  pointsBig: { flexDirection: "row", alignItems: "baseline", gap: 4, marginRight: 4 },
+  pointsValue: {
+    fontSize: 28,
+    fontFamily: "Outfit_800ExtraBold",
+    color: "#FFFFFF",
+  },
+  pointsLabel: {
+    fontSize: 13,
+    fontFamily: "Outfit_400Regular",
+    color: "rgba(255,255,255,0.6)",
   },
   levelBadge: {
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   levelText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Outfit_700Bold",
+  },
+  titleBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  titleText: {
     color: "#FFFFFF",
     fontSize: 13,
     fontFamily: "Outfit_600SemiBold",
@@ -376,8 +495,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   streakText: {
     color: "#FFB300",
@@ -385,16 +504,20 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_600SemiBold",
   },
   progressBarBg: {
-    height: 6,
-    borderRadius: 3,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: "rgba(255,255,255,0.2)",
     overflow: "hidden",
     marginBottom: 6,
   },
   progressBarFill: {
-    height: 6,
-    borderRadius: 3,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: "#FFFFFF",
+  },
+  progressLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   progressLabel: {
     fontSize: 11,
@@ -431,10 +554,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 24,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontFamily: "Outfit_700Bold",
-    marginBottom: 12,
+  },
+  sectionCount: {
+    fontSize: 13,
+    fontFamily: "Outfit_400Regular",
   },
   badgesRow: {
     gap: 12,
@@ -448,6 +580,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
   },
+  badgeCardLocked: { opacity: 0.55 },
   badgeIcon: {
     width: 44,
     height: 44,
