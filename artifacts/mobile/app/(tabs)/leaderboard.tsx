@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth, User } from "@/context/AuthContext";``
+import { useAuth, User } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 function initials(name: string): string {
@@ -35,7 +35,6 @@ function LeaderboardRow({
   isCurrentUser: boolean;
 }) {
   const colors = useColors();
-  const levelInfo = getLevelInfo(user.points);
   const isMedal = rank <= 3;
 
   return (
@@ -153,7 +152,7 @@ export default function LeaderboardScreen() {
 
       <FlatList
         data={sorted}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={[
           styles.list,
           {

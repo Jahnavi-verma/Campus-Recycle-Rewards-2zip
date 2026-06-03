@@ -2,6 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useRef } from "react";
+import { api } from "@/services/api";
+
 import {
   Animated,
   Platform,
@@ -139,14 +141,56 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, allUsers } = useAuth();
+  const [campusStats, setCampusStats] = React.useState({
+  totalSubmissions: 0,
+  totalPoints: 0,
+  totalBottles: 0,
+  totalCans: 0,
+  totalUsers: 0,
+});
 
   useEffect(() => {
-    requestNotificationPermissions().then((granted) => {
-      if (granted) scheduleDailyReminders();
-    });
-  }, []);
+  requestNotificationPermissions().then((granted) => {
+    if (granted) scheduleDailyReminders();
+  });
+}, []);
 
-  if (!user) return null;
+// 👇 ADD THIS HERE
+useEffect(() => {
+  async function loadCampusStats() {
+    try {
+      const res = await api.get("/recycling/stats");
+
+      console.log("CAMPUS STATS", res.data);
+
+      setCampusStats({
+        totalSubmissions:
+          res.data.totalSubmissions || 0,
+
+        totalPoints:
+          res.data.totalPoints || 0,
+
+        totalBottles:
+          res.data.totalBottles || 0,
+
+        totalCans:
+          res.data.totalCans || 0,
+
+        totalUsers:
+          res.data.totalUsers || 0,
+      });
+    } catch (err) {
+      console.error(
+        "Failed loading campus analytics:",
+        err
+      );
+    }
+  }
+
+  loadCampusStats();
+}, []);
+
+if (!user) return null;
 
   // Safe Data Fallbacks
   const safeSessions = user.sessions || [];
@@ -173,18 +217,6 @@ export default function HomeScreen() {
   const hasBonus =
     multiplierInfo?.breakdown && multiplierInfo.breakdown.length > 0;
 
-  // Community stats computed with deep data checks
-  const totalCampusSessions = safeAllUsers.reduce(
-    (s, u) => s + (u?.totalSessions || 0),
-    0,
-  );
-  const totalCampusCO2 = safeAllUsers.reduce(
-    (s, u) => s + (u?.carbonReduced || 0),
-    0,
-  );
-  const activeUsersToday = safeAllUsers.filter(
-    (u) => u && u.lastSessionDate === today,
-  ).length;
 
   return (
     <ScrollView
@@ -240,7 +272,7 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${(user.levelProgressPercent || 0) * 100}%` },
+                { width: `${(user.levelProgressPercent || 0)}%` },
               ]}
             />
           </View>
@@ -428,21 +460,21 @@ export default function HomeScreen() {
         <View style={styles.campusStats}>
           <View style={styles.campusStat}>
             <Text style={styles.campusStatVal}>
-              {totalCampusSessions.toLocaleString()}
+             {campusStats.totalSubmissions.toLocaleString()}
             </Text>
-            <Text style={styles.campusStatLabel}>Total Sessions</Text>
+            <Text style={styles.campusStatLabel}>Recycling Scans</Text>
           </View>
           <View style={[styles.campusDivider]} />
           <View style={styles.campusStat}>
             <Text style={styles.campusStatVal}>
-              {totalCampusCO2.toFixed(1)} kg
+             {campusStats.totalPoints.toLocaleString()}
             </Text>
-            <Text style={styles.campusStatLabel}>CO2 Saved</Text>
+            <Text style={styles.campusStatLabel}>Campus Points</Text>
           </View>
           <View style={[styles.campusDivider]} />
           <View style={styles.campusStat}>
-            <Text style={styles.campusStatVal}>{activeUsersToday}</Text>
-            <Text style={styles.campusStatLabel}>Active Today</Text>
+            <Text style={styles.campusStatVal}>{campusStats.totalUsers}</Text>
+            <Text style={styles.campusStatLabel}>Students</Text>
           </View>
         </View>
       </View>

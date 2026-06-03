@@ -106,14 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const authenticated = await authService.isAuthenticated();
         if (authenticated) {
           try {
-            const profileData = await authService.getCurrentUser();
+            const profileRes = await api.get("/users/me");
 
-            // 🌟 FIXED: Add data guards so undefined arrays do not crash components
-            setUser({
-              ...profileData,
-              sessions: (profileData as any)?.sessions || [],
-              badges: (profileData as any)?.badges || [],
-            } as unknown as User);
+setUser({
+  ...profileRes.data,
+  sessions: profileRes.data.sessions || [],
+  badges: profileRes.data.badges || [],
+} as User);
           } catch (apiError) {
             console.warn(
               "Session token expired or backend unreachable. Logging out cleanly.",
@@ -149,15 +148,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       // 🌟 FIXED: Apply collection fallbacks on active authentication responses too
-      if (response && response.user) {
-        setUser({
-          ...response.user,
-          sessions: (response.user as any).sessions || [],
-          badges: (response.user as any).badges || [],
-        } as unknown as User);
-      } else {
-        setUser(response.user as unknown as User);
-      }
+     if (response?.user) {
+  const profileRes = await api.get("/users/me");
+
+  setUser({
+    ...profileRes.data,
+    sessions: profileRes.data.sessions || [],
+    badges: profileRes.data.badges || [],
+  } as User);
+}
 
       return { success: true };
     } catch (error: any) {
@@ -264,11 +263,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   };
 
-  // REPLACE:
-const refreshLeaderboard = async () => {
-  // Will pull global rankings dynamically via Phase 4 setup
-};
-
 // WITH:
 const refreshLeaderboard = useCallback(async () => {
   try {
@@ -290,7 +284,7 @@ useEffect(() => {
   if (user) {
     refreshLeaderboard();
   }
-}, [user?.id]);
+}, [user, refreshLeaderboard]);
 
   return (
     <AuthContext.Provider
