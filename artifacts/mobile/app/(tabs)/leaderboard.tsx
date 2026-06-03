@@ -8,11 +8,13 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth, User } from "@/context/AuthContext";
+import { api } from "@/services/api";
 import { useColors } from "@/hooks/useColors";
 
 function initials(name: string): string {
@@ -113,33 +115,122 @@ function LeaderboardRow({
 export default function LeaderboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { allUsers, user, refreshLeaderboard } = useAuth();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const { user } = useAuth();
+  const [rows, setRows] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  // Fetch on every mount — don't rely on AuthContext's useEffect which
-  // only fires when `user` changes and may have already fired before the
-  // user navigated to this tab.
+  // Fetch directly from the screen — bypasses AuthContext allUsers entirely.
+  // AuthContext's refreshLeaderboard + allUsers state had a stale-closure /
+  // timing problem where the screen rendered before the effect re-ran.
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await api.get("/users/leaderboard");
+      const data = Array.isArray(response.data) ? response.data : [];
+      const sorted = [...data].sort((a: any, b: any) => b.points - a.points);
+      setRows(sorted);
+    } catch (err: any) {
+      console.error("Leaderboard fetch failed:", err?.response?.status, err?.message);
+      setError(
+        err?.response?.status === 401
+          ? "Session expired. Please log out and back in."
+          : err?.message === "Network Error"
+          ? "Cannot reach server. Check your connection."
+          : `Failed to load (${err?.response?.status ?? "unknown"})`
+      );
+    }
+  }, []);
+
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      await refreshLeaderboard();
+      await fetchLeaderboard();
       if (!cancelled) setLoading(false);
     }
     load();
     return () => { cancelled = true; };
   }, []);
 
-  const sorted = [...allUsers].sort((a, b) => b.points - a.points);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refreshLeaderboard();
+    await fetchLeaderboard();
     setRefreshing(false);
-  }, [refreshLeaderboard]);
+  }, [fetchLeaderboard]);
 
-  const userRank = sorted.findIndex((u) => u.id === user?.id) + 1;
+  const userRank = rows.findIndex((u) => u.id === user?.id) + 1;
+
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <View style={styles.centeredState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
+            Loading rankings…
+          </Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.centeredState}>
+          <Feather name="wifi-off" size={36} color={colors.mutedForeground} />
+          <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryBtn, { backgroundColor: colors.primary }]}
+            onPress={async () => {
+              setLoading(true);
+              await fetchLeaderboard();
+              setLoading(false);
+            }}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={rows}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={[
+          styles.list,
+          {
+            paddingBottom:
+              Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
+          },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.centeredState}>
+            <Text style={[styles.stateText, { color: colors.mutedForeground }]}>
+              No rankings yet. Pull to refresh.
+            </Text>
+          </View>
+        }
+        renderItem={({ item, index }) => (
+          <LeaderboardRow
+            user={item}
+            rank={index + 1}
+            isCurrentUser={item.id === user?.id}
+          />
+        )}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -160,51 +251,13 @@ export default function LeaderboardScreen() {
           <View style={styles.myRankChip}>
             <Feather name="trending-up" size={14} color="#FFFFFF" />
             <Text style={styles.myRankText}>
-              Your rank: #{userRank} of {sorted.length}
+              Your rank: #{userRank} of {rows.length}
             </Text>
           </View>
         )}
       </LinearGradient>
 
-      {loading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={sorted}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={[
-            styles.list,
-            {
-              paddingBottom:
-                Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
-            },
-          ]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No data yet. Pull to refresh.
-              </Text>
-            </View>
-          }
-          renderItem={({ item, index }) => (
-            <LeaderboardRow
-              user={item}
-              rank={index + 1}
-              isCurrentUser={item.id === user?.id}
-            />
-          )}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {renderBody()}
     </View>
   );
 }
@@ -244,21 +297,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Outfit_600SemiBold",
   },
-  loadingState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   list: { paddingTop: 16, paddingHorizontal: 16, gap: 10 },
-  emptyState: {
+  centeredState: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 80,
+    gap: 14,
+    paddingHorizontal: 32,
   },
-  emptyText: {
+  stateText: {
     fontSize: 14,
     fontFamily: "Outfit_400Regular",
+    textAlign: "center",
+  },
+  retryBtn: {
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  retryText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
   },
   row: {
     flexDirection: "row",
