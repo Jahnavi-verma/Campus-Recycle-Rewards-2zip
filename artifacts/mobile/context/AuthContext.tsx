@@ -81,6 +81,7 @@ interface AuthContextType {
   ) => Promise<SessionResult>;
   deductPoints: (amount: number) => Promise<void>;
   refreshLeaderboard: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const KEYS = {
@@ -263,7 +264,19 @@ setUser({
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   };
 
-// WITH:
+const refreshUser = useCallback(async () => {
+  try {
+    const profileRes = await api.get("/users/me");
+    setUser({
+      ...profileRes.data,
+      sessions: profileRes.data.sessions || [],
+      badges: profileRes.data.badges || [],
+    } as User);
+  } catch (error) {
+    console.error("Failed to refresh user profile:", error);
+  }
+}, []);
+
 const refreshLeaderboard = useCallback(async () => {
   try {
     const response = await api.get("/users/leaderboard");
@@ -301,6 +314,7 @@ useEffect(() => {
         addRecyclingSession,
         deductPoints,
         refreshLeaderboard,
+        refreshUser,
       }}
     >
       {children}

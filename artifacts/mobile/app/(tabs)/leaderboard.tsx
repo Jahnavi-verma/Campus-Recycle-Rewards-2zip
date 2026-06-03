@@ -93,7 +93,7 @@ function LeaderboardRow({
           )}
         </View>
         <Text style={[styles.usnText, { color: colors.mutedForeground }]}>
-          {user.usn} · {user.levelTitle || "Sapling"}
+          {user.levelTitle || "Newbie"}
         </Text>
       </View>
 
@@ -167,6 +167,13 @@ export default function LeaderboardScreen() {
             tintColor={colors.primary}
           />
         }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+              No data yet. Pull to refresh.
+            </Text>
+          </View>
+        }
         renderItem={({ item, index }) => (
           <LeaderboardRow
             user={item}
@@ -217,6 +224,16 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_600SemiBold",
   },
   list: { paddingTop: 16, paddingHorizontal: 16, gap: 10 },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 80,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: "Outfit_400Regular",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",

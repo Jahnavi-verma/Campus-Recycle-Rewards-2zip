@@ -384,9 +384,13 @@ if (!user) return null;
 >
                     <Feather
   name={
-    (badge.icon as React.ComponentProps<
-      typeof Feather
-    >["name"]) || "award"
+    (({
+      leaf: "tag",
+      water: "droplet",
+      trophy: "award",
+      star: "star",
+      award: "award",
+    } as Record<string, React.ComponentProps<typeof Feather>["name"]>)[badge.icon]) || "award"
   }
   size={20}
   color="#22C55E"

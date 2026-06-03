@@ -169,6 +169,30 @@ const handleConfirm = async () => {
     return;
   }
 
+  // Manual entry bypass: skip backend, go straight to success with local points
+  if (binId === "MANUAL") {
+    await refreshUser();
+    await refreshLeaderboard();
+    setSessionResult({
+      pointsEarned: previewPoints,
+      basePoints,
+      multiplier: multiplierInfo.total,
+      carbonReduced: co2Preview,
+      newBadges: [],
+      leveledUp: false,
+      newLevel: user?.level || 1,
+      newTitle: user?.levelTitle || "Newbie",
+      challengeCompleted: false,
+      challengeBonus: 0,
+    });
+    setStep("success");
+    setShowConfetti(true);
+    playSuccessPing();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setShowConfetti(false), 3200);
+    return;
+  }
+
   setSaving(true);
 
   try {
@@ -204,7 +228,7 @@ const handleConfirm = async () => {
         user?.level || 1,
       newTitle:
         user?.levelTitle ||
-        "Sprout",
+        "Newbie",
       challengeCompleted:
         false,
       challengeBonus: 0,
