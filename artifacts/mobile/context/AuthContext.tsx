@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { Platform } from 'react-native';
 import React, {
   createContext,
   useCallback,
@@ -8,7 +9,7 @@ import React, {
   useState,
 } from "react";
 
-import { authService } from "@/services/auth"; // Your new API network service
+import { authService } from "@/services/auth";
 
 export interface RecyclingSession {
   id: string;
@@ -99,15 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const seen = await AsyncStorage.getItem(KEYS.HAS_SEEN_ONBOARDING);
         setHasSeenOnboarding(seen === "true");
 
-        // If a JWT token exists in local storage, fetch the live profile data from Spring Boot
-        if (authService.isAuthenticated()) {
+        // Use the native-safe authentication state check
+        const authenticated = await authService.isAuthenticated();
+        if (authenticated) {
           try {
             const profileData = await authService.getCurrentUser();
-            // Map Spring Boot user fields into Context state
             setUser(profileData as unknown as User);
           } catch (apiError) {
             console.warn("Session token expired or backend unreachable. Logging out cleanly.");
-            authService.logout();
+            await authService.logout();
           }
         }
       } catch (e) {
@@ -137,13 +138,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password: password,
       });
 
-      // Update state with authenticated user returned from backend mapping
       setUser(response.user as unknown as User);
       return { success: true };
     } catch (error: any) {
       console.error("Login endpoint failed:", error);
 
-      // Look for a specific CORS or network block error signature
       if (error.message === "Network Error") {
         return {
           success: false,
@@ -178,11 +177,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // 1. Submit registration request
+      // 1. Submit registration request with ALL required fields
       await authService.register({
         name: name.trim(),
         email: emailLower,
         password: password,
+        usn: usnUpper, // 🌟 FIXED: USN is now safely passed over the network!
       });
 
       // 2. Automatically sign user into a new session upon successful registration
@@ -191,82 +191,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Registration endpoint failed:", error);
       return {
         success: false,
-        error: error.response?.data?.message || "Registration failed. Email/USN may already be taken.",
+        error: error.response?.data?.error || error.response?.data?.message || "Registration failed. Email/USN may already be taken.",
       };
     }
   };
 
-  const googleLogin = async (
-    name: string,
-    email: string,
-    profilePicture?: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    // Left as stub fallback since backend uses a direct standard manual strategy
-    return { success: false, error: "Google sign-in is not supported on this platform." };
-  };
-
-  const logout = async () => {
-    authService.logout();
-    setUser(null);
-  };
-
-  /**
-   * Recycling Submission - Phase 5 integration link
-   */
-  const addRecyclingSession = async (
-    itemType: "can" | "bottle",
-    quantity: number
-  ): Promise<SessionResult> => {
-    if (!user) throw new Error("Not logged in");
-
-    // Placeholder until you configure Phase 5 RecyclingController integration
-    return {
-      pointsEarned: 10,
-      basePoints: 10,
-      multiplier: 1,
-      carbonReduced: 0.1,
-      newBadges: [],
-      leveledUp: false,
-      newLevel: user.level || 1,
-      newTitle: user.levelTitle || "Green Scout",
-      challengeCompleted: false,
-      challengeBonus: 0,
-    };
-  };
-
-  const deductPoints = async (amount: number): Promise<void> => {
-    if (!user) return;
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-  };
-
-  const refreshLeaderboard = async () => {
-    // Will pull global rankings dynamically via Phase 4 setup
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        allUsers,
-        hasSeenOnboarding,
-        isLoading,
-        completeOnboarding,
-        login,
-        googleLogin,
-        signup,
-        logout,
-        addRecyclingSession,
-        deductPoints,
-        refreshLeaderboard,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth(): AuthContextType {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-}
+  const googleLogin = async

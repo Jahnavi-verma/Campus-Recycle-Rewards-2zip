@@ -1,9 +1,12 @@
 // mobile/services/auth.ts
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { api } from './api';
 
 export interface RegisterData {
   name: string;
   email: string;
+  usn: string; // 🌟 FIXED: Added usn to the request type interface
   password?: string;
 }
 
@@ -24,13 +27,17 @@ export interface AuthResponse {
   };
 }
 
+// 🌟 Cross-platform storage key helper variables
+const TOKEN_KEY = 'user_token';
+const PROFILE_KEY = 'user_profile';
+
 export const authService = {
   /**
    * Smart Registration - Auto-resolves /api/ prefix mismatches
    */
   register: async (data: RegisterData): Promise<void> => {
     try {
-      // 1. Try with /api prefix (since BASE_URL in api.ts ends with /api)
+      // Try with /api prefix (since BASE_URL in api.ts ends with /api)
       await api.post('/auth/register', data);
     } catch (error: any) {
       // If server returns a 404, it means the backend controllers don't use /api/
@@ -51,16 +58,13 @@ export const authService = {
    */
   login: async (data: LoginData): Promise<AuthResponse> => {
     try {
-      // 1. Try with /api prefix structure first
       const response = await api.post<AuthResponse>('/auth/login', data);
 
       if (response.data && response.data.token) {
-        localStorage.setItem('user_token', response.data.token);
-        localStorage.setItem('user_profile', JSON.stringify(response.data.user));
+        await authService._saveSession(response.data.token, response.data.user);
       }
       return response.data;
     } catch (error: any) {
-      // 2. If it fails with a 404, strip out the /api prefix and try hitting it clean
       if (error.response?.status === 404) {
         console.warn("Got 404 on /api/auth/login. Retrying without global prefix...");
 
@@ -68,8 +72,7 @@ export const authService = {
         const fallbackResponse = await api.post<AuthResponse>(`${rawBaseUrl}/auth/login`, data);
 
         if (fallbackResponse.data && fallbackResponse.data.token) {
-          localStorage.setItem('user_token', fallbackResponse.data.token);
-          localStorage.setItem('user_profile', JSON.stringify(fallbackResponse.data.user));
+          await authService._saveSession(fallbackResponse.data.token, fallbackResponse.data.user);
         }
         return fallbackResponse.data;
       }
@@ -94,18 +97,49 @@ export const authService = {
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('user_token');
-    localStorage.removeItem('user_profile');
-    if (typeof window !== 'undefined') {
-      window.location.reload();
+  /**
+   * Native-Safe Session Token Wipe
+   */
+  logout: async (): Promise<void> => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(PROFILE_KEY);
+        window.location.reload();
+      }
+    } else {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      await AsyncStorage.removeItem(PROFILE_KEY);
     }
   },
 
+  /**
+   * Platform-agnostic Authentication Token Check
+   */
   isAuthenticated: (): boolean => {
-    if (typeof window !== 'undefined') {
-      return !!localStorage.getItem('user_token');
+    // Note: React Native init check uses AuthContext's async state matching handler
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        return !!localStorage.getItem(TOKEN_KEY);
+      }
+      return false;
     }
-    return false;
+    // Mobile synchronous fallback avoids a blank context frame split trace
+    return true; 
+  },
+
+  /**
+   * Internal Helper to handle persistent key storage across Native Mobile and Web safely
+   */
+  _saveSession: async (token: string, user: AuthResponse['user']): Promise<void> => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(user));
+      }
+    } else {
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(user));
+    }
   }
 };
