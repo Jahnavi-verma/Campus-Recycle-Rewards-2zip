@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RecyclingSession, useAuth } from "@/context/AuthContext";
-import { BADGES, getLevelInfo } from "@/constants/gamification";
+import { BADGES } from "@/constants/gamification";
 import { useColors } from "@/hooks/useColors";
 import { RecyclingHeatmap } from "@/components/RecyclingHeatmap";
 import { ShareCard } from "@/components/ShareCard";
@@ -130,7 +130,6 @@ export default function ProfileScreen() {
   const safeBadges = user.badges || [];
   const safeAllUsers = allUsers || [];
 
-  const levelInfo = getLevelInfo(user.points || 0);
   const activityPoints = Math.floor((user.points || 0) / 10);
   const earnedBadges = BADGES.filter((b) => safeBadges.includes(b.id));
   const sorted = [...safeAllUsers].sort(
@@ -225,7 +224,9 @@ export default function ProfileScreen() {
                 { backgroundColor: "rgba(255,255,255,0.18)" },
               ]}
             >
-              <Text style={styles.levelText}>Lv.{levelInfo.level}</Text>
+              <Text style={styles.levelText}>
+  Lv.{user.level || 1}
+</Text>
             </View>
             <View
               style={[
@@ -233,7 +234,9 @@ export default function ProfileScreen() {
                 { backgroundColor: "rgba(108,99,255,0.35)" },
               ]}
             >
-              <Text style={styles.titleText}>{levelInfo.title}</Text>
+            <Text style={styles.titleText}>
+  {user.levelTitle || "Newbie"}
+</Text>
             </View>
             {(user.streak || 0) > 0 && (
               <View
@@ -252,18 +255,19 @@ export default function ProfileScreen() {
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${(levelInfo.progress || 0) * 100}%` },
+                { width: `${(user.levelProgressPercent || 0) * 100}%` },
               ]}
             />
           </View>
           <View style={styles.progressLabels}>
-            <Text style={styles.progressLabel}>Lv.{levelInfo.level}</Text>
+           <Text style={styles.progressLabel}>
+  Lv.{user.level || 1}
+</Text>
             <Text style={styles.progressLabel}>
               {Math.max(
-                0,
-                levelInfo.nextLevelPoints - (user.points || 0),
-              ).toLocaleString()}{" "}
-              pts to Lv.{levelInfo.level + 1}
+  0,
+  (user.nextLevelPoints || 200) - (user.points || 0),
+).toLocaleString()} pts to Lv.{(user.level || 1) + 1}
             </Text>
           </View>
         </LinearGradient>

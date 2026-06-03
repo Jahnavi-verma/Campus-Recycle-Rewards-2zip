@@ -11,8 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth, User } from "@/context/AuthContext";
-import { getLevelInfo } from "@/constants/gamification";
+import { useAuth, User } from "@/context/AuthContext";``
 import { useColors } from "@/hooks/useColors";
 
 function initials(name: string): string {
@@ -95,7 +94,7 @@ function LeaderboardRow({
           )}
         </View>
         <Text style={[styles.usnText, { color: colors.mutedForeground }]}>
-          {user.usn} · {levelInfo.title}
+          {user.usn} · {user.levelTitle || "Sapling"}
         </Text>
       </View>
 

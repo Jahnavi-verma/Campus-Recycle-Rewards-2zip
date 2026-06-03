@@ -18,7 +18,6 @@ import { Mascot } from "@/components/Mascot";
 import { useAuth, User } from "@/context/AuthContext";
 import { getDailyFact } from "@/constants/recyclingFacts";
 import {
-  getLevelInfo,
   getMultiplier,
   getTodaysChallenge,
 } from "@/constants/gamification";
@@ -153,7 +152,6 @@ export default function HomeScreen() {
   const safeSessions = user.sessions || [];
   const safeAllUsers = allUsers || [];
 
-  const levelInfo = getLevelInfo(user.points || 0);
   const activityPoints = Math.floor((user.points || 0) / 10);
   const sorted = [...safeAllUsers].sort(
     (a, b) => (b.points || 0) - (a.points || 0),
@@ -218,7 +216,7 @@ export default function HomeScreen() {
               ]}
             >
               <Text style={styles.levelChipText}>
-                Lv.{levelInfo.level} · {levelInfo.title}
+                Lv.{user.level || 1} · {user.levelTitle || "Newbie"}
               </Text>
             </View>
             {userRank > 0 && (
@@ -242,7 +240,7 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${(levelInfo.progress || 0) * 100}%` },
+                { width: `${(user.levelProgressPercent || 0) * 100}%` },
               ]}
             />
           </View>
@@ -250,9 +248,9 @@ export default function HomeScreen() {
             <Text style={styles.progressText}>
               {Math.max(
                 0,
-                levelInfo.nextLevelPoints - (user.points || 0),
+                (user.nextLevelPoints || 200) - (user.points || 0),
               ).toLocaleString()}{" "}
-              pts to Lv.{levelInfo.level + 1}
+              pts to Lv.{(user.level || 1) + 1}
             </Text>
             {(user.streak || 0) > 0 && (
               <View style={styles.streakPill}>
@@ -355,7 +353,7 @@ export default function HomeScreen() {
       </TouchableOpacity>
 
       {/* Mascot */}
-      <Mascot level={levelInfo.level} streak={user.streak || 0} />
+      <Mascot level={user.level || 1} streak={user.streak || 0} />
 
       {/* Daily Fact */}
       {(() => {

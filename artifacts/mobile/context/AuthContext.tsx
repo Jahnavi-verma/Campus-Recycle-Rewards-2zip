@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
+import { api } from "@/services/api";
 import React, {
   createContext,
   useCallback,
@@ -35,6 +36,7 @@ export interface User {
   level?: number;
   levelTitle?: string;
   levelProgressPercent?: number;
+  nextLevelPoints?: number;
   sessions: RecyclingSession[];
 }
 
@@ -262,9 +264,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   };
 
-  const refreshLeaderboard = async () => {
-    // Will pull global rankings dynamically via Phase 4 setup
-  };
+  // REPLACE:
+const refreshLeaderboard = async () => {
+  // Will pull global rankings dynamically via Phase 4 setup
+};
+
+// WITH:
+const refreshLeaderboard = useCallback(async () => {
+  try {
+    const response = await api.get("/users/leaderboard");
+    if (response.data) {
+      const processedUsers = response.data.map((u: any) => ({
+        ...u,
+        sessions: [],
+        badges: u.badges || [],
+      }));
+      setAllUsers(processedUsers);
+    }
+  } catch (error) {
+    console.error("Failed to sync leaderboard:", error);
+  }
+}, []);
+
+useEffect(() => {
+  if (user) {
+    refreshLeaderboard();
+  }
+}, [user?.id]);
 
   return (
     <AuthContext.Provider

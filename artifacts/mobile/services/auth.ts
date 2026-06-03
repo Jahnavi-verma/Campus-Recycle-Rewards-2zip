@@ -15,6 +15,7 @@ export interface LoginData {
   password?: string;
 }
 
+// REPLACE the existing AuthResponse interface with this:
 export interface AuthResponse {
   token: string;
   user: {
@@ -23,7 +24,12 @@ export interface AuthResponse {
     name: string;
     points: number;
     level: number;
+    levelTitle: string;
+    levelProgressPercent: number;
+    nextLevelPoints: number;
+    avatarUrl?: string;
     usn?: string;
+    role?: string;
   };
 }
 
