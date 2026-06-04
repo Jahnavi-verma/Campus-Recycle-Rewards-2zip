@@ -389,7 +389,7 @@ if (!user) return null;
       </TouchableOpacity>
 
       {/* Mascot */}
-      <Mascot level={user.level || 1} streak={user.streak || 0} />
+      <Mascot level={user.level || 1} streak={user.streak || 0} levelTitle={user.levelTitle || "Sapling"} />
 
       {/* Daily Fact */}
       {(() => {
