@@ -96,7 +96,7 @@ function LeaderboardRow({
           )}
         </View>
         <Text style={[styles.usnText, { color: colors.mutedForeground }]}>
-          {user.levelTitle || "Newbie"}
+          {user.levelTitle || "Sapling"}
         </Text>
       </View>
 
@@ -121,9 +121,6 @@ export default function LeaderboardScreen() {
   const [error, setError] = React.useState<string | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
 
-  // Fetch directly from the screen — bypasses AuthContext allUsers entirely.
-  // AuthContext's refreshLeaderboard + allUsers state had a stale-closure /
-  // timing problem where the screen rendered before the effect re-ran.
   const fetchLeaderboard = useCallback(async () => {
     try {
       setError(null);
@@ -160,7 +157,7 @@ export default function LeaderboardScreen() {
     setRefreshing(false);
   }, [fetchLeaderboard]);
 
-  const userRank = rows.findIndex((u) => u.id === user?.id) + 1;
+  const userRank = rows.findIndex((u) => String(u.id) === String(user?.id)) + 1;
 
   const renderBody = () => {
     if (loading) {
@@ -198,7 +195,7 @@ export default function LeaderboardScreen() {
     return (
       <FlatList
         data={rows}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={[
           styles.list,
           {
@@ -224,7 +221,7 @@ export default function LeaderboardScreen() {
           <LeaderboardRow
             user={item}
             rank={index + 1}
-            isCurrentUser={item.id === user?.id}
+            isCurrentUser={String(item.id) === String(user?.id)}
           />
         )}
         showsVerticalScrollIndicator={false}
@@ -330,14 +327,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 12,
   },
-  rankCol: {
-    width: 32,
-    alignItems: "center",
-  },
-  rankText: {
-    fontSize: 16,
-    fontFamily: "Outfit_700Bold",
-  },
+  rankCol: { width: 32, alignItems: "center" },
+  rankText: { fontSize: 16, fontFamily: "Outfit_700Bold" },
   avatar: {
     width: 44,
     height: 44,
@@ -345,46 +336,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: {
-    fontSize: 16,
-    fontFamily: "Outfit_700Bold",
-  },
+  avatarText: { fontSize: 16, fontFamily: "Outfit_700Bold" },
   nameCol: { flex: 1 },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  userName: {
-    fontSize: 15,
-    fontFamily: "Outfit_600SemiBold",
-    flex: 1,
-  },
-  youBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  userName: { fontSize: 15, fontFamily: "Outfit_600SemiBold", flex: 1 },
+  youBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
   youBadgeText: {
     color: "#FFFFFF",
     fontSize: 10,
     fontFamily: "Outfit_700Bold",
     letterSpacing: 0.5,
   },
-  usnText: {
-    fontSize: 12,
-    fontFamily: "Outfit_400Regular",
-    marginTop: 2,
-  },
-  pointsCol: {
-    alignItems: "flex-end",
-  },
-  pointsVal: {
-    fontSize: 18,
-    fontFamily: "Outfit_700Bold",
-  },
-  pointsLabel: {
-    fontSize: 11,
-    fontFamily: "Outfit_400Regular",
-  },
+  usnText: { fontSize: 12, fontFamily: "Outfit_400Regular", marginTop: 2 },
+  pointsCol: { alignItems: "flex-end" },
+  pointsVal: { fontSize: 18, fontFamily: "Outfit_700Bold" },
+  pointsLabel: { fontSize: 11, fontFamily: "Outfit_400Regular" },
 });

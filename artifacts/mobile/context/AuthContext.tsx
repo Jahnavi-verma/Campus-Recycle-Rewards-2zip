@@ -22,7 +22,7 @@ export interface RecyclingSession {
 }
 
 export interface User {
-  id: string;
+  id: number | string;
   name: string;
   email: string;
   usn: string;
